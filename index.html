@@ -2,8 +2,15 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>LifeOS — Bullet Journal & Roda da Vida</title>
+    
+    <!-- Configuração PWA para instalação no Celular (Android & iOS) -->
+    <meta name="theme-color" content="#FF6B00">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="LifeOS">
+
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://accounts.google.com/gsi/client" async defer></script>
@@ -13,9 +20,10 @@
             font-family: 'Plus Jakarta Sans', sans-serif;
             background: linear-gradient(135deg, #F8FAFC 0%, #FFF7ED 50%, #F3E8FF 100%);
             color: #1E293B;
+            -webkit-tap-highlight-color: transparent;
         }
         .glass-card {
-            background: rgba(255, 255, 255, 0.85);
+            background: rgba(255, 255, 255, 0.88);
             backdrop-filter: blur(12px);
             border: 1px solid rgba(226, 232, 240, 0.9);
             box-shadow: 0 4px 20px -2px rgba(15, 23, 42, 0.04);
@@ -38,7 +46,7 @@
         <span id="toast-msg">Operação realizada com sucesso!</span>
     </div>
 
-    <!-- Cabeçalho Claro & Lúdico (Padrão Visual Original) -->
+    <!-- Cabeçalho Claro & Lúdico -->
     <header class="bg-white/90 backdrop-blur-md border-b border-slate-200/80 sticky top-0 z-40">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 py-4 flex flex-col lg:flex-row justify-between items-center gap-4">
             <!-- Logo e Subtítulo -->
@@ -54,34 +62,34 @@
                         </span>
                     </div>
                     <p class="text-xs text-slate-500 italic mt-0.5">
-                        "Metrifique sua vida a cada 6 meses com integração direta ao Google Tarefas."
+                        "Metrifique sua vida a cada 6 meses com nuvem Google Drive & Tarefas."
                     </p>
                 </div>
             </div>
 
-            <!-- Indicadores Superiores + Botão Google -->
-            <div class="flex items-center gap-3 sm:gap-5 flex-wrap justify-center">
-                <div class="bg-slate-50 border border-slate-200/80 rounded-2xl px-4 py-2 flex items-center gap-5">
+            <!-- Indicadores Superiores + Botão Google Unificado -->
+            <div class="flex items-center gap-3 sm:gap-4 flex-wrap justify-center">
+                <div class="bg-slate-50 border border-slate-200/80 rounded-2xl px-4 py-2 flex items-center gap-4 sm:gap-5">
                     <div>
                         <div class="text-[10px] font-bold uppercase tracking-wider text-slate-400">MÉDIA DA RODA</div>
                         <div class="text-sm font-extrabold text-slate-800" id="header-media">7.0 / 10</div>
                     </div>
                     <div class="h-7 w-px bg-slate-200"></div>
                     <div>
-                        <div class="text-[10px] font-bold uppercase tracking-wider text-slate-400">TAREFAS CONCLUÍDAS</div>
+                        <div class="text-[10px] font-bold uppercase tracking-wider text-slate-400">TAREFAS</div>
                         <div class="text-sm font-extrabold text-emerald-600" id="header-concluidas">0 / 0</div>
                     </div>
-                    <div class="h-7 w-px bg-slate-200 hidden sm:block"></div>
-                    <div class="hidden sm:block">
-                        <div class="text-[10px] font-bold uppercase tracking-wider text-slate-400">SEGURANÇA LOCAL</div>
-                        <div class="text-xs font-bold text-indigo-600">Protegido ✓</div>
+                    <div class="h-7 w-px bg-slate-200"></div>
+                    <div>
+                        <div class="text-[10px] font-bold uppercase tracking-wider text-slate-400">NUVEM DRIVE</div>
+                        <div class="text-xs font-bold text-slate-500" id="cloud-sync-status">Offline (Local)</div>
                     </div>
                 </div>
 
-                <!-- Botão OAuth 2.0 Google -->
+                <!-- Botão OAuth 2.0 Google (Tasks + Drive) -->
                 <button id="google-auth-btn" onclick="handleGoogleAuth()" class="bg-slate-900 hover:bg-slate-800 text-white px-4 py-2.5 rounded-xl text-xs font-bold transition flex items-center gap-2 shadow-sm">
                     <svg class="w-4 h-4" viewBox="0 0 24 24"><path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.665-5.17 3.665-9.17z"/><path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.11-6.72-4.96H1.29v3.14C3.26 21.3 7.31 24 12 24z"/><path fill="#FBBC05" d="M5.28 14.24c-.24-.72-.38-1.49-.38-2.24s.14-1.52.38-2.24V6.62H1.29C.47 8.24 0 10.06 0 12s.47 3.76 1.29 5.38l3.99-3.14z"/><path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.31 0 3.26 2.7 1.29 6.62l3.99 3.14c.95-2.85 3.6-4.96 6.72-4.96z"/></svg>
-                    <span id="auth-status-text">Conectar Google Tarefas</span>
+                    <span id="auth-status-text">Conectar & Sincronizar</span>
                 </button>
             </div>
         </div>
@@ -126,7 +134,7 @@
             </div>
         </section>
 
-        <!-- ABA 2: PLANOS DE AÇÃO (CRUD + PROGRESSO AUTOMÁTICO) -->
+        <!-- ABA 2: PLANOS DE AÇÃO -->
         <section id="tab-planos" class="tab-content mt-6 hidden">
             <div class="glass-card p-6 rounded-3xl mb-6">
                 <h2 class="text-base font-extrabold text-slate-800 mb-1">Criar Novo Plano de Ação</h2>
@@ -155,13 +163,13 @@
             <div id="planos-grid" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
         </section>
 
-        <!-- ABA 3: DIÁRIO & GOOGLE TAREFAS (COM VÍNCULO AO PLANO E ANTI-DUPLICAÇÃO) -->
+        <!-- ABA 3: DIÁRIO & GOOGLE TAREFAS -->
         <section id="tab-bujo" class="tab-content mt-6 hidden">
             <div class="glass-card p-6 rounded-3xl mb-6">
                 <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4">
                     <div>
                         <h2 class="text-base font-extrabold text-slate-800">Registro Rápido & Google Tarefas</h2>
-                        <p class="text-xs text-slate-500">Crie tarefas vinculadas a um Pilar e a um Plano de Ação. Sincroniza direto com sua nuvem Google.</p>
+                        <p class="text-xs text-slate-500">Crie tarefas vinculadas a um Pilar e a um Plano de Ação. Sincroniza com Google Tarefas e Drive.</p>
                     </div>
                     <button onclick="pullFromGoogleTasks()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-xl text-xs font-bold transition self-start sm:self-auto">
                         ↻ Puxar Status do Google
@@ -169,7 +177,6 @@
                 </div>
 
                 <div class="grid grid-cols-1 md:grid-cols-12 gap-3">
-                    <!-- Seletor de Pilar -->
                     <select id="task-pillar" class="md:col-span-2 bg-white border border-slate-200 rounded-xl px-3 py-2.5 text-xs font-semibold text-slate-700 focus:outline-none focus:border-[#FF6B00]">
                         <option value="CAR">[CAR] Carreira</option>
                         <option value="FIN">[FIN] Finanças</option>
@@ -183,26 +190,22 @@
                         <option value="ESP">[ESP] Espirit.</option>
                     </select>
 
-                    <!-- Seletor de Plano de Ação Vinculado -->
                     <select id="task-plan-link" class="md:col-span-3 bg-white border border-slate-200 rounded-xl px-3 py-2.5 text-xs font-semibold text-slate-700 focus:outline-none focus:border-[#FF6B00]">
                         <option value="">Sem plano vinculado</option>
                     </select>
 
-                    <!-- Input de Texto -->
                     <input type="text" id="task-input" placeholder="Ex: Revisar referencial teórico do capítulo 2..." class="md:col-span-4 bg-white border border-slate-200 rounded-xl px-4 py-2.5 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-[#FF6B00]">
 
-                    <!-- Botão com Lock Anti-Duplicação -->
                     <button id="btn-sync-task" onclick="addNewTask()" class="md:col-span-3 bg-slate-900 hover:bg-slate-800 disabled:bg-slate-400 text-white px-4 py-2.5 rounded-xl text-xs font-bold transition flex items-center justify-center gap-2 shadow-sm">
                         <span>+ Criar & Sincronizar</span>
                     </button>
                 </div>
             </div>
 
-            <!-- Lista de Tarefas -->
             <div class="space-y-3" id="tasks-list"></div>
         </section>
 
-        <!-- ABA 4: RASTREADOR DE HÁBITOS (CRUD + GRADE MENSAL) -->
+        <!-- ABA 4: RASTREADOR DE HÁBITOS -->
         <section id="tab-habitos" class="tab-content mt-6 hidden">
             <div class="glass-card p-6 rounded-3xl mb-6">
                 <h2 class="text-base font-extrabold text-slate-800 mb-1">Adicionar Novo Hábito Recorrente</h2>
@@ -240,9 +243,14 @@
 
     <script>
         const CLIENT_ID = "889768565480-jb7ou6qj9v3oj201d0elohoke5m58rvf.apps.googleusercontent.com";
-        const SCOPES = "https://www.googleapis.com/auth/tasks";
+        // Escopos unificados: Google Tasks + Pasta Privada do Google Drive (appDataFolder)
+        const SCOPES = "https://www.googleapis.com/auth/tasks https://www.googleapis.com/auth/drive.appdata";
+        const DRIVE_FILE_NAME = "lifeos_cloud_state.json";
+
         let tokenClient;
         let accessToken = null;
+        let driveFileId = null;
+        let saveTimeout = null;
 
         const PILLAR_COLORS = {
             CAR: 'bg-blue-100 text-blue-700',
@@ -271,6 +279,7 @@
         ];
 
         let state = JSON.parse(localStorage.getItem('lifeos_v3_state')) || {
+            updatedAt: Date.now(),
             pilares: defaultPilares,
             planos: [
                 { id: 101, pilar: 'INT', titulo: 'Finalizar capítulos do TCC (UERJ)' },
@@ -287,9 +296,24 @@
             ]
         };
 
-        function saveState() {
+        function updateCloudStatus(text, colorClass) {
+            const el = document.getElementById('cloud-sync-status');
+            el.textContent = text;
+            el.className = `text-xs font-bold ${colorClass}`;
+        }
+
+        function saveState(skipCloud = false) {
+            state.updatedAt = Date.now();
             localStorage.setItem('lifeos_v3_state', JSON.stringify(state));
             updateHeaderStats();
+
+            if (accessToken && !skipCloud) {
+                updateCloudStatus('Salvando...', 'text-amber-600');
+                clearTimeout(saveTimeout);
+                saveTimeout = setTimeout(() => {
+                    saveStateToGoogleDrive();
+                }, 1200); // Debounce de 1.2s para evitar excesso de requisições ao mover sliders
+            }
         }
 
         function showToast(msg, isError = false) {
@@ -322,21 +346,21 @@
             if (tabId === 'planos') renderPlanos();
         }
 
-        // --- GOOGLE OAUTH 2.0 & SYNC ---
+        // --- GOOGLE OAUTH 2.0 + GOOGLE DRIVE APPDATA SYNC ---
         window.onload = function () {
             if (typeof google !== 'undefined') {
                 tokenClient = google.accounts.oauth2.initTokenClient({
                     client_id: CLIENT_ID,
                     scope: SCOPES,
-                    callback: (response) => {
+                    callback: async (response) => {
                         if (response.error !== undefined) {
                             showToast('Erro ao autenticar com o Google.', true);
                             return;
                         }
                         accessToken = response.access_token;
-                        document.getElementById('auth-status-text').textContent = "Google Conectado ✓";
+                        document.getElementById('auth-status-text').textContent = "Conectado ✓";
                         document.getElementById('google-auth-btn').classList.replace('bg-slate-900', 'bg-emerald-600');
-                        showToast('✅ Google Tarefas conectado com sucesso!');
+                        await initGoogleDriveSync();
                     },
                 });
             }
@@ -351,6 +375,83 @@
             }
         }
 
+        async function initGoogleDriveSync() {
+            updateCloudStatus('Sincronizando...', 'text-indigo-600');
+            try {
+                // 1. Procura o arquivo oculto na pasta appDataFolder do Google Drive
+                const searchRes = await fetch(
+                    `https://www.googleapis.com/drive/v3/files?spaces=appDataFolder&q=name='${DRIVE_FILE_NAME}'&fields=files(id,name,modifiedTime)`,
+                    { headers: { 'Authorization': `Bearer ${accessToken}` } }
+                );
+                if (!searchRes.ok) throw new Error('Verifique se a Google Drive API está ativada no Google Cloud.');
+                const searchData = await searchRes.json();
+
+                if (searchData.files && searchData.files.length > 0) {
+                    driveFileId = searchData.files[0].id;
+                    // Baixa o conteúdo JSON do Google Drive
+                    const fileRes = await fetch(
+                        `https://www.googleapis.com/drive/v3/files/${driveFileId}?alt=media`,
+                        { headers: { 'Authorization': `Bearer ${accessToken}` } }
+                    );
+                    const cloudState = await fileRes.json();
+
+                    if (cloudState && cloudState.pilares) {
+                        state = cloudState;
+                        saveState(true);
+                        renderAll();
+                        updateCloudStatus('Sincronizado ✓', 'text-emerald-600');
+                        showToast('☁️ Dados carregados da sua nuvem Google Drive!');
+                    }
+                } else {
+                    // Primeiro acesso: envia o estado atual para criar o arquivo na nuvem
+                    await saveStateToGoogleDrive();
+                    showToast('☁️ Backup inicial criado no Google Drive!');
+                }
+            } catch (err) {
+                console.error(err);
+                updateCloudStatus('Erro Drive API', 'text-rose-600');
+                showToast('Ative a "Google Drive API" no Google Cloud Console para sincronizar entre dispositivos.', true);
+            }
+        }
+
+        async function saveStateToGoogleDrive() {
+            if (!accessToken) return;
+            try {
+                const metadata = {
+                    name: DRIVE_FILE_NAME,
+                    mimeType: 'application/json'
+                };
+                if (!driveFileId) {
+                    metadata.parents = ['appDataFolder'];
+                }
+
+                const form = new FormData();
+                form.append('metadata', new Blob([JSON.stringify(metadata)], { type: 'application/json' }));
+                form.append('file', new Blob([JSON.stringify(state)], { type: 'application/json' }));
+
+                const url = driveFileId
+                    ? `https://www.googleapis.com/upload/drive/v3/files/${driveFileId}?uploadType=multipart`
+                    : `https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart`;
+
+                const res = await fetch(url, {
+                    method: driveFileId ? 'PATCH' : 'POST',
+                    headers: { 'Authorization': `Bearer ${accessToken}` },
+                    body: form
+                });
+
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data.id) driveFileId = data.id;
+                    updateCloudStatus('Sincronizado ✓', 'text-emerald-600');
+                } else {
+                    updateCloudStatus('Falha ao salvar', 'text-rose-600');
+                }
+            } catch (err) {
+                updateCloudStatus('Falha de rede', 'text-rose-600');
+            }
+        }
+
+        // --- GOOGLE TASKS API ---
         async function pushTaskToGoogle(taskText, pilarCode) {
             if (!accessToken) return null;
             const res = await fetch('https://tasks.googleapis.com/tasks/v1/lists/@default/tasks', {
@@ -475,7 +576,7 @@
             });
         }
 
-        // --- PLANOS DE AÇÃO (CRUD + CÁLCULO AUTOMÁTICO DE PROGRESSO) ---
+        // --- PLANOS DE AÇÃO ---
         function calculatePlanProgress(planId) {
             const linkedTasks = state.tasks.filter(t => Number(t.planId) === Number(planId));
             if (linkedTasks.length === 0) return { percent: 0, done: 0, total: 0 };
@@ -543,7 +644,6 @@
 
         function deletePlan(planId) {
             state.planos = state.planos.filter(p => p.id !== planId);
-            // Desvincula tarefas que apontavam para este plano
             state.tasks.forEach(t => {
                 if (Number(t.planId) === Number(planId)) t.planId = null;
             });
@@ -560,7 +660,7 @@
                 state.planos.map(pl => `<option value="${pl.id}">[${pl.pilar}] ${pl.titulo}</option>`).join('');
         }
 
-        // --- TAREFAS & GOOGLE TASKS (COM LOCK ANTI-DUPLICAÇÃO) ---
+        // --- TAREFAS ---
         function renderTasks() {
             const container = document.getElementById('tasks-list');
             if (state.tasks.length === 0) {
@@ -605,7 +705,6 @@
                 return;
             }
 
-            // Bloqueio imediato contra duplo clique
             btn.disabled = true;
             btn.innerHTML = `<svg class="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> <span>Enviando...</span>`;
 
@@ -630,9 +729,9 @@
                 renderPlanos();
 
                 if (accessToken) {
-                    showToast('✅ Tarefa criada e enviada para o Google Tarefas!');
+                    showToast('✅ Tarefa criada e enviada para o Google Tarefas & Drive!');
                 } else {
-                    showToast('✅ Tarefa salva localmente! (Conecte o Google no topo para enviar à nuvem)');
+                    showToast('✅ Tarefa salva localmente! Conecte sua conta Google no topo para sincronizar.');
                 }
             } catch (err) {
                 showToast('Erro ao enviar para o Google Tarefas. Tente novamente.', true);
@@ -648,7 +747,7 @@
                 task.concluida = !task.concluida;
                 saveState();
                 renderTasks();
-                renderPlanos(); // Recalcula barra de progresso do plano vinculado
+                renderPlanos();
                 if (task.concluida && task.planId) {
                     showToast('🎯 Progresso do Plano de Ação atualizado!');
                 }
@@ -663,7 +762,7 @@
             showToast('Tarefa removida.');
         }
 
-        // --- HÁBITOS (CRUD + GRADE INTERATIVA) ---
+        // --- HÁBITOS ---
         function renderHabitos() {
             const container = document.getElementById('habits-table-container');
             if (state.habitos.length === 0) {
