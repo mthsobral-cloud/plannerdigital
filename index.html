@@ -67,8 +67,8 @@
                 </div>
             </div>
 
-            <!-- Indicadores Superiores + Botão Google Unificado -->
-            <div class="flex items-center gap-3 sm:gap-4 flex-wrap justify-center">
+            <!-- Indicadores Superiores + Botões Google -->
+            <div class="flex items-center gap-2.5 sm:gap-3.5 flex-wrap justify-center">
                 <div class="bg-slate-50 border border-slate-200/80 rounded-2xl px-4 py-2 flex items-center gap-4 sm:gap-5">
                     <div>
                         <div class="text-[10px] font-bold uppercase tracking-wider text-slate-400">MÉDIA DA RODA</div>
@@ -86,10 +86,16 @@
                     </div>
                 </div>
 
+                <!-- Botão Forçar Sincronização da Nuvem -->
+                <button id="force-sync-btn" onclick="forceCloudPull()" title="Baixar versão mais recente do Google Drive" class="bg-white hover:bg-slate-100 border border-slate-200 text-slate-700 px-3.5 py-2.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-sm">
+                    <span id="force-sync-icon">↻</span>
+                    <span>Sincronizar Nuvem</span>
+                </button>
+
                 <!-- Botão OAuth 2.0 Google (Tasks + Drive) -->
                 <button id="google-auth-btn" onclick="handleGoogleAuth()" class="bg-slate-900 hover:bg-slate-800 text-white px-4 py-2.5 rounded-xl text-xs font-bold transition flex items-center gap-2 shadow-sm">
                     <svg class="w-4 h-4" viewBox="0 0 24 24"><path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.665-5.17 3.665-9.17z"/><path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.11-6.72-4.96H1.29v3.14C3.26 21.3 7.31 24 12 24z"/><path fill="#FBBC05" d="M5.28 14.24c-.24-.72-.38-1.49-.38-2.24s.14-1.52.38-2.24V6.62H1.29C.47 8.24 0 10.06 0 12s.47 3.76 1.29 5.38l3.99-3.14z"/><path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.31 0 3.26 2.7 1.29 6.62l3.99 3.14c.95-2.85 3.6-4.96 6.72-4.96z"/></svg>
-                    <span id="auth-status-text">Conectar & Sincronizar</span>
+                    <span id="auth-status-text">Conectar Google</span>
                 </button>
             </div>
         </div>
@@ -172,7 +178,7 @@
                         <p class="text-xs text-slate-500">Crie tarefas vinculadas a um Pilar e a um Plano de Ação. Sincroniza com Google Tarefas e Drive.</p>
                     </div>
                     <button onclick="pullFromGoogleTasks()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-xl text-xs font-bold transition self-start sm:self-auto">
-                        ↻ Puxar Status do Google
+                        ↻ Puxar Status do Google Tasks
                     </button>
                 </div>
 
@@ -243,12 +249,12 @@
 
     <script>
         const CLIENT_ID = "889768565480-jb7ou6qj9v3oj201d0elohoke5m58rvf.apps.googleusercontent.com";
-        // Escopos unificados: Google Tasks + Pasta Privada do Google Drive (appDataFolder)
         const SCOPES = "https://www.googleapis.com/auth/tasks https://www.googleapis.com/auth/drive.appdata";
         const DRIVE_FILE_NAME = "lifeos_cloud_state.json";
 
         let tokenClient;
         let accessToken = null;
+        let tokenExpiresAt = 0;
         let driveFileId = null;
         let saveTimeout = null;
 
@@ -278,8 +284,10 @@
             { id: 'ESP', nome: 'Espiritualidade', nota: 7, meta: 8, ideal: 'Alinhamento de propósito e serenidade.' }
         ];
 
-        let state = JSON.parse(localStorage.getItem('lifeos_v3_state')) || {
-            updatedAt: Date.now(),
+        // Se ainda não existe histórico no aparelho, updatedAt inicia em 0 para priorizar dados existentes na nuvem
+        let storedRaw = localStorage.getItem('lifeos_v3_state');
+        let state = storedRaw ? JSON.parse(storedRaw) : {
+            updatedAt: 0,
             pilares: defaultPilares,
             planos: [
                 { id: 101, pilar: 'INT', titulo: 'Finalizar capítulos do TCC (UERJ)' },
@@ -302,17 +310,41 @@
             el.className = `text-xs font-bold ${colorClass}`;
         }
 
-        function saveState(skipCloud = false) {
-            state.updatedAt = Date.now();
+        function handleExpiredToken() {
+            accessToken = null;
+            tokenExpiresAt = 0;
+            updateCloudStatus('Sessão expirada ↻', 'text-rose-600');
+            const authBtn = document.getElementById('google-auth-btn');
+            authBtn.classList.remove('bg-emerald-600', 'bg-slate-900');
+            authBtn.classList.add('bg-amber-600');
+            document.getElementById('auth-status-text').textContent = "Reconectar Google";
+            showToast('⚠️ Sessão Google expirou (1h). Clique em "Reconectar Google" para salvar na nuvem.', true);
+        }
+
+        function isTokenValid() {
+            if (!accessToken) return false;
+            if (tokenExpiresAt && Date.now() >= tokenExpiresAt) {
+                handleExpiredToken();
+                return false;
+            }
+            return true;
+        }
+
+        function saveState(skipCloud = false, customTimestamp = null) {
+            state.updatedAt = customTimestamp !== null ? customTimestamp : Date.now();
             localStorage.setItem('lifeos_v3_state', JSON.stringify(state));
             updateHeaderStats();
 
-            if (accessToken && !skipCloud) {
-                updateCloudStatus('Salvando...', 'text-amber-600');
-                clearTimeout(saveTimeout);
-                saveTimeout = setTimeout(() => {
-                    saveStateToGoogleDrive();
-                }, 1200); // Debounce de 1.2s para evitar excesso de requisições ao mover sliders
+            if (!skipCloud) {
+                if (isTokenValid()) {
+                    updateCloudStatus('Salvando...', 'text-amber-600');
+                    clearTimeout(saveTimeout);
+                    saveTimeout = setTimeout(() => {
+                        saveStateToGoogleDrive();
+                    }, 1000);
+                } else if (accessToken === null && tokenExpiresAt > 0) {
+                    updateCloudStatus('Sessão expirada ↻', 'text-rose-600');
+                }
             }
         }
 
@@ -321,7 +353,7 @@
             const msgEl = document.getElementById('toast-msg');
             msgEl.textContent = msg;
             toast.className = `toast fixed bottom-6 right-6 z-50 ${isError ? 'bg-rose-600' : 'bg-emerald-600'} text-white px-5 py-3.5 rounded-2xl shadow-xl flex items-center gap-3 font-semibold text-xs show`;
-            setTimeout(() => toast.classList.remove('show'), 3500);
+            setTimeout(() => toast.classList.remove('show'), 3800);
         }
 
         function updateHeaderStats() {
@@ -346,7 +378,7 @@
             if (tabId === 'planos') renderPlanos();
         }
 
-        // --- GOOGLE OAUTH 2.0 + GOOGLE DRIVE APPDATA SYNC ---
+        // --- GOOGLE OAUTH 2.0 + GOOGLE DRIVE APPDATA SYNC COM TRAVA DE TIMESTAMP ---
         window.onload = function () {
             if (typeof google !== 'undefined') {
                 tokenClient = google.accounts.oauth2.initTokenClient({
@@ -358,9 +390,16 @@
                             return;
                         }
                         accessToken = response.access_token;
+                        // Margem de segurança de 2 minutos antes do vencimento real de 3600s
+                        const expiresInSec = Number(response.expires_in) || 3600;
+                        tokenExpiresAt = Date.now() + (expiresInSec - 120) * 1000;
+
+                        const authBtn = document.getElementById('google-auth-btn');
+                        authBtn.classList.remove('bg-slate-900', 'bg-amber-600');
+                        authBtn.classList.add('bg-emerald-600');
                         document.getElementById('auth-status-text').textContent = "Conectado ✓";
-                        document.getElementById('google-auth-btn').classList.replace('bg-slate-900', 'bg-emerald-600');
-                        await initGoogleDriveSync();
+
+                        await syncWithGoogleDrive(false);
                     },
                 });
             }
@@ -375,47 +414,78 @@
             }
         }
 
-        async function initGoogleDriveSync() {
+        async function forceCloudPull() {
+            if (!isTokenValid()) {
+                showToast('Conecte sua conta Google primeiro para puxar da nuvem.', true);
+                handleGoogleAuth();
+                return;
+            }
+            const icon = document.getElementById('force-sync-icon');
+            icon.classList.add('animate-spin', 'inline-block');
+            await syncWithGoogleDrive(true);
+            icon.classList.remove('animate-spin', 'inline-block');
+        }
+
+        async function syncWithGoogleDrive(forcePull = false) {
+            if (!isTokenValid()) return;
             updateCloudStatus('Sincronizando...', 'text-indigo-600');
+
             try {
-                // 1. Procura o arquivo oculto na pasta appDataFolder do Google Drive
                 const searchRes = await fetch(
                     `https://www.googleapis.com/drive/v3/files?spaces=appDataFolder&q=name='${DRIVE_FILE_NAME}'&fields=files(id,name,modifiedTime)`,
                     { headers: { 'Authorization': `Bearer ${accessToken}` } }
                 );
-                if (!searchRes.ok) throw new Error('Verifique se a Google Drive API está ativada no Google Cloud.');
+
+                if (searchRes.status === 401) {
+                    handleExpiredToken();
+                    return;
+                }
+                if (!searchRes.ok) throw new Error('Falha ao consultar Google Drive API');
+
                 const searchData = await searchRes.json();
 
                 if (searchData.files && searchData.files.length > 0) {
                     driveFileId = searchData.files[0].id;
-                    // Baixa o conteúdo JSON do Google Drive
                     const fileRes = await fetch(
                         `https://www.googleapis.com/drive/v3/files/${driveFileId}?alt=media`,
                         { headers: { 'Authorization': `Bearer ${accessToken}` } }
                     );
-                    const cloudState = await fileRes.json();
 
-                    if (cloudState && cloudState.pilares) {
+                    if (fileRes.status === 401) {
+                        handleExpiredToken();
+                        return;
+                    }
+
+                    const cloudState = await fileRes.json();
+                    const cloudTimestamp = Number(cloudState?.updatedAt) || 0;
+                    const localTimestamp = Number(state?.updatedAt) || 0;
+
+                    // Trava de Timestamp: baixa da nuvem se forçado OU se a nuvem for mais recente/igual
+                    if (cloudState && cloudState.pilares && (forcePull || cloudTimestamp >= localTimestamp)) {
                         state = cloudState;
-                        saveState(true);
+                        saveState(true, cloudTimestamp);
                         renderAll();
                         updateCloudStatus('Sincronizado ✓', 'text-emerald-600');
-                        showToast('☁️ Dados carregados da sua nuvem Google Drive!');
+                        showToast('☁️ Versão mais recente carregada do Google Drive!');
+                    } else if (localTimestamp > cloudTimestamp) {
+                        // A versão deste aparelho é mais nova que a da nuvem -> envia atualização
+                        await saveStateToGoogleDrive();
+                        showToast('☁️ Alterações locais mais recentes enviadas para o Drive!');
                     }
                 } else {
-                    // Primeiro acesso: envia o estado atual para criar o arquivo na nuvem
+                    // Primeiro acesso absoluto na nuvem
                     await saveStateToGoogleDrive();
                     showToast('☁️ Backup inicial criado no Google Drive!');
                 }
             } catch (err) {
                 console.error(err);
                 updateCloudStatus('Erro Drive API', 'text-rose-600');
-                showToast('Ative a "Google Drive API" no Google Cloud Console para sincronizar entre dispositivos.', true);
+                showToast('Erro ao sincronizar com Google Drive. Verifique sua conexão.', true);
             }
         }
 
         async function saveStateToGoogleDrive() {
-            if (!accessToken) return;
+            if (!isTokenValid()) return;
             try {
                 const metadata = {
                     name: DRIVE_FILE_NAME,
@@ -439,6 +509,11 @@
                     body: form
                 });
 
+                if (res.status === 401) {
+                    handleExpiredToken();
+                    return;
+                }
+
                 if (res.ok) {
                     const data = await res.json();
                     if (data.id) driveFileId = data.id;
@@ -453,7 +528,7 @@
 
         // --- GOOGLE TASKS API ---
         async function pushTaskToGoogle(taskText, pilarCode) {
-            if (!accessToken) return null;
+            if (!isTokenValid()) return null;
             const res = await fetch('https://tasks.googleapis.com/tasks/v1/lists/@default/tasks', {
                 method: 'POST',
                 headers: {
@@ -462,13 +537,17 @@
                 },
                 body: JSON.stringify({ title: `[${pilarCode}] ${taskText}` })
             });
+            if (res.status === 401) {
+                handleExpiredToken();
+                return null;
+            }
             if (!res.ok) throw new Error('Falha na API Google Tasks');
             const data = await res.json();
             return data.id;
         }
 
         async function pullFromGoogleTasks() {
-            if (!accessToken) {
+            if (!isTokenValid()) {
                 showToast('Conecte sua conta Google no botão superior primeiro!', true);
                 return;
             }
@@ -476,6 +555,10 @@
                 const res = await fetch('https://tasks.googleapis.com/tasks/v1/lists/@default/tasks?showCompleted=true&showHidden=true', {
                     headers: { 'Authorization': `Bearer ${accessToken}` }
                 });
+                if (res.status === 401) {
+                    handleExpiredToken();
+                    return;
+                }
                 const data = await res.json();
                 if (!data.items) return;
 
@@ -497,7 +580,7 @@
                 saveState();
                 renderTasks();
                 renderPlanos();
-                showToast(`Sincronizado! ${updatedCount} tarefa(s) atualizada(s) do Google.`);
+                showToast(`Sincronizado! ${updatedCount} tarefa(s) atualizada(s) do Google Tasks.`);
             } catch (e) {
                 showToast('Erro ao buscar tarefas do Google.', true);
             }
@@ -710,7 +793,7 @@
 
             try {
                 let googleTaskId = null;
-                if (accessToken) {
+                if (isTokenValid()) {
                     googleTaskId = await pushTaskToGoogle(texto, pilar);
                 }
 
@@ -728,7 +811,7 @@
                 renderTasks();
                 renderPlanos();
 
-                if (accessToken) {
+                if (isTokenValid()) {
                     showToast('✅ Tarefa criada e enviada para o Google Tarefas & Drive!');
                 } else {
                     showToast('✅ Tarefa salva localmente! Conecte sua conta Google no topo para sincronizar.');
