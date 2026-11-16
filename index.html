@@ -1,892 +1,438 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>LifeOS — BuJo & Roda da Vida</title>
-
-  <!-- Tailwind CSS -->
-  <script src="https://cdn.tailwindcss.com"></script>
-
-  <!-- Google Fonts -->
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@600;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
-
-  <!-- Lucide Icons -->
-  <script src="https://unpkg.com/lucide@latest"></script>
-
-  <!-- Chart.js -->
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
-
-  <!-- Argon2 WASM / JavaScript Wrapper -->
-  <script src="https://cdn.jsdelivr.net/npm/argon2-browser@1.18.0/lib/argon2.js"></script>
-
-  <script>
-    tailwind.config = {
-      theme: {
-        extend: {
-          fontFamily: {
-            sans: ['Inter', 'sans-serif'],
-            display: ['Space Grotesk', 'sans-serif'],
-            mono: ['JetBrains Mono', 'monospace'],
-          },
-        }
-      }
-    };
-  </script>
-
-  <style>
-    body {
-      background: linear-gradient(135deg, #fdfbf7 0%, #f4ede2 100%);
-      color: #1e1b18;
-      min-height: 100vh;
-      font-family: 'Inter', sans-serif;
-    }
-    .card-bujo {
-      background: rgba(255, 255, 255, 0.88);
-      backdrop-filter: blur(12px);
-      border: 1px solid rgba(226, 215, 201, 0.8);
-      box-shadow: 0 10px 30px -5px rgba(115, 90, 60, 0.08);
-      border-radius: 1.25rem;
-    }
-    .btn-bujo {
-      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-    }
-    .btn-bujo:hover {
-      transform: translateY(-1px);
-      box-shadow: 0 6px 20px rgba(255, 107, 0, 0.25);
-    }
-    ::-webkit-scrollbar { width: 6px; height: 6px; }
-    ::-webkit-scrollbar-thumb { background: rgba(217, 83, 0, 0.25); border-radius: 9999px; }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LifeOS — Bullet Journal & Roda da Vida</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Chart.js para a Roda da Vida -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Google Identity Services (OAuth 2.0) -->
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
+        body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #0B132B; color: #E0E1DD; }
+        .pillar-card { background: rgba(255, 255, 255, 0.03); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.08); }
+        .toast { transition: all 0.3s ease-in-out; transform: translateY(100px); opacity: 0; }
+        .toast.show { transform: translateY(0); opacity: 1; }
+    </style>
 </head>
-<body class="flex flex-col min-h-screen">
+<body class="min-h-screen pb-12">
 
-  <!-- TOP APP BAR -->
-  <header class="sticky top-0 z-30 card-bujo border-b px-4 lg:px-8 py-3.5">
-    <div class="max-w-[1500px] mx-auto flex items-center justify-between gap-4">
-      <div class="flex items-center gap-3">
-        <div class="w-10 h-10 rounded-2xl bg-gradient-to-tr from-orange-500 to-amber-500 flex items-center justify-center text-white font-mono font-bold text-lg shadow-lg shadow-orange-500/30">
-          •×
-        </div>
-        <div>
-          <h1 class="font-display font-bold text-lg text-slate-900 tracking-tight flex items-center gap-2">
-            LifeOS <span class="text-xs font-mono font-semibold px-2 py-0.5 rounded-full bg-orange-500/15 text-orange-600">Bullet Journal & Roda da Vida</span>
-          </h1>
-          <p class="text-xs text-slate-500 italic">"Metrifique sua vida a cada 6 meses com integração direta ao Google Tarefas."</p>
-        </div>
-      </div>
-
-      <!-- Quick Stats -->
-      <div class="hidden xl:flex items-center gap-6 px-4 py-2 rounded-2xl bg-white/70 border border-slate-200">
-        <div>
-          <div class="text-[10px] font-mono uppercase tracking-wider text-slate-400">Média da Roda</div>
-          <div class="font-mono font-bold text-slate-800 text-sm" id="kpi-score">7.2 / 10</div>
-        </div>
-        <div class="w-[1px] h-6 bg-slate-200"></div>
-        <div>
-          <div class="text-[10px] font-mono uppercase tracking-wider text-slate-400">Tarefas Concluídas</div>
-          <div class="font-mono font-bold text-emerald-600 text-sm" id="kpi-tasks">0 / 0</div>
-        </div>
-        <div class="w-[1px] h-6 bg-slate-200"></div>
-        <div>
-          <div class="text-[10px] font-mono uppercase tracking-wider text-slate-400">Segurança Local</div>
-          <div class="font-mono font-bold text-indigo-600 text-sm" id="kpi-argon">Protegido ✓</div>
-        </div>
-      </div>
-
-      <!-- Actions -->
-      <div class="flex items-center gap-2">
-        <button id="google-auth-btn" onclick="handleGoogleAuth()" class="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-700 text-xs font-mono font-semibold transition border border-blue-200">
-          <i data-lucide="shield-check" class="w-3.5"></i>
-          <span id="auth-status-text">Conectar Google Tarefas</span>
-        </button>
-        <button onclick="openModal('modal-quick')" class="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-orange-600 hover:bg-orange-700 text-white text-xs font-display font-semibold shadow-lg shadow-orange-600/25 btn-bujo">
-          <i data-lucide="plus" class="w-4 h-4"></i>
-          <span>Nova Entrada •</span>
-        </button>
-      </div>
+    <!-- Toast de Notificação Flutuante -->
+    <div id="toast" class="toast fixed bottom-6 right-6 z-50 bg-emerald-600 text-white px-5 py-3 rounded-xl shadow-2xl flex items-center gap-3 font-medium text-sm">
+        <span id="toast-msg">Tudo sincronizado com sucesso!</span>
     </div>
 
-    <!-- Navigation Tabs -->
-    <div class="max-w-[1500px] mx-auto mt-3 pt-2 border-t border-slate-200/60 flex items-center gap-2 overflow-x-auto">
-      <button onclick="switchTab('wheel')" data-tab="wheel" class="nav-tab px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold transition bg-orange-600 text-white shadow flex items-center gap-2">
-        <i data-lucide="pie-chart" class="w-4 h-4"></i> Roda da Vida (10 Pilares)
-      </button>
-      <button onclick="switchTab('plans')" data-tab="plans" class="nav-tab px-4 py-2 rounded-xl text-xs sm:text-sm font-medium transition text-slate-600 hover:text-orange-600 hover:bg-white/60 flex items-center gap-2">
-        <i data-lucide="target" class="w-4 h-4"></i> Planos de Ação
-      </button>
-      <button onclick="switchTab('bujo')" data-tab="bujo" class="nav-tab px-4 py-2 rounded-xl text-xs sm:text-sm font-medium transition text-slate-600 hover:text-orange-600 hover:bg-white/60 flex items-center gap-2">
-        <i data-lucide="list-todo" class="w-4 h-4"></i> Diário & Google Tarefas
-      </button>
-      <button onclick="switchTab('habits')" data-tab="habits" class="nav-tab px-4 py-2 rounded-xl text-xs sm:text-sm font-medium transition text-slate-600 hover:text-orange-600 hover:bg-white/60 flex items-center gap-2">
-        <i data-lucide="calendar-check" class="w-4 h-4"></i> Rastreador de Hábitos
-      </button>
-    </div>
-  </header>
-
-  <!-- MAIN WORKSPACE -->
-  <main class="flex-1 max-w-[1500px] w-full mx-auto px-4 lg:px-8 py-6">
-
-    <!-- VIEW 1: RODA DA VIDA (10 PILARES) -->
-    <section id="view-wheel" class="tab-view space-y-6">
-      <div class="card-bujo p-6 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
-        <div>
-          <span class="text-xs font-mono uppercase tracking-widest text-orange-600 font-bold">• CICLO SEMESTRAL (6 MESES)</span>
-          <h2 class="font-display text-2xl font-bold text-slate-900 mt-1">Avaliação dos 10 Pilares da Vida</h2>
-          <p class="text-sm text-slate-600 mt-1 max-w-2xl">
-            Avalie cada área de 0 a 10 com base na descrição de nota máxima. Seus dados são salvos automaticamente no navegador.
-          </p>
-        </div>
-        <div class="flex items-center gap-3">
-          <input type="text" id="cycle-name-input" value="1º Semestre / 2027" aria-label="Nome do Ciclo" class="px-3.5 py-2 rounded-xl bg-white border border-slate-200 text-xs font-mono" />
-          <button onclick="saveSnapshot()" class="px-4 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-mono font-semibold transition">
-            Salvar Marco do Ciclo
-          </button>
-        </div>
-      </div>
-
-      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        <!-- Chart Radar -->
-        <div class="lg:col-span-5 card-bujo p-6 flex flex-col items-center justify-center">
-          <h3 class="font-display font-bold text-base text-slate-800 mb-4 flex items-center gap-2">
-            <i data-lucide="radar" class="w-4 h-4 text-orange-600"></i> Mapa de Equilíbrio Atual
-          </h3>
-          <div class="w-full max-w-[380px] aspect-square">
-            <canvas id="radarChart"></canvas>
-          </div>
-        </div>
-
-        <!-- 10 Pillars Sliders Grid -->
-        <div class="lg:col-span-7 card-bujo p-6 flex flex-col">
-          <h3 class="font-display font-bold text-base text-slate-800 mb-4">Notas & Referenciais de Nota 10</h3>
-          <div id="pillars-grid" class="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-[580px] overflow-y-auto pr-2">
-            <!-- Populated via JS -->
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- VIEW 2: PLANOS DE AÇÃO & SUGESTÕES -->
-    <section id="view-plans" class="tab-view hidden space-y-6">
-      <div class="card-bujo p-6 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-        <div>
-          <span class="text-xs font-mono uppercase tracking-widest text-orange-600 font-bold">• METAS & PLANOS TÁTICOS</span>
-          <h2 class="font-display text-2xl font-bold text-slate-900 mt-1">Planos de Ação por Pilar</h2>
-          <p class="text-sm text-slate-600 mt-1">Defina objetivos claros para elevar suas notas mais baixas até a próxima revisão semestral.</p>
-        </div>
-        <button onclick="openModal('modal-plan')" class="px-4 py-2.5 rounded-xl bg-orange-600 text-white text-xs font-mono font-semibold btn-bujo">
-          + Novo Plano de Ação
-        </button>
-      </div>
-
-      <div id="plans-grid" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
-        <!-- Populated via JS -->
-      </div>
-    </section>
-
-    <!-- VIEW 3: BUJO & GOOGLE TASKS -->
-    <section id="view-bujo" class="tab-view hidden space-y-6">
-      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        <!-- Rapid Log Stream -->
-        <div class="lg:col-span-8 space-y-4">
-          <form onsubmit="handleBuJoSubmit(event)" class="card-bujo p-4 space-y-3 border-l-4 border-l-orange-500">
-            <div class="flex items-center justify-between text-xs font-mono text-slate-500">
-              <span>REGISTRO RÁPIDO (• Tarefa, ○ Evento, — Anotação)</span>
-              <span>Integração Google Tarefas</span>
-            </div>
-            <div class="grid grid-cols-1 sm:grid-cols-12 gap-2.5">
-              <select id="bujo-type" aria-label="Tipo de registro" class="sm:col-span-2 px-3 py-2.5 rounded-xl bg-white border border-slate-200 font-mono text-xs">
-                <option value="task">• Tarefa</option>
-                <option value="event">○ Evento</option>
-                <option value="note">— Nota</option>
-              </select>
-              <select id="bujo-pillar" aria-label="Pilar da vida" class="sm:col-span-3 px-3 py-2.5 rounded-xl bg-white border border-slate-200 font-mono text-xs"></select>
-              <input type="text" id="bujo-title" required placeholder="Descreva a tarefa, evento ou anotação..." class="sm:col-span-5 px-3.5 py-2.5 rounded-xl bg-white border border-slate-200 text-sm" />
-              <button type="submit" class="sm:col-span-2 py-2.5 px-3 rounded-xl bg-orange-600 hover:bg-orange-700 text-white font-mono font-semibold text-xs flex items-center justify-center gap-1">
-                Adicionar
-              </button>
-            </div>
-          </form>
-
-          <!-- GOOGLE TASKS REAL CREDENTIALS & DIAGNOSTIC PANEL -->
-          <div class="card-bujo p-4 border-l-4 border-l-blue-500 space-y-3 bg-blue-50/40">
-            <div class="flex items-center justify-between">
-              <div class="flex items-center gap-2">
-                <i data-lucide="key" class="w-4 h-4 text-blue-600"></i>
-                <h4 class="font-display font-bold text-xs text-blue-900 uppercase">Conexão & Diagnóstico — Google Tarefas API</h4>
-              </div>
-              <span id="diagnostic-status-badge" class="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-amber-100 text-amber-700">Aguardando Login</span>
-            </div>
-            <p class="text-xs text-slate-600">
-              Seu <b>ID do Cliente OAuth 2.0</b> já está preenchido abaixo. Clique em <b>Autenticar com Google</b> para autorizar o envio de tarefas.
-            </p>
-            <div class="flex flex-col sm:flex-row items-center gap-2">
-              <input type="text" id="google-client-id-input" placeholder="Cole seu ID do Cliente (.apps.googleusercontent.com)" class="w-full sm:flex-1 px-3 py-2 rounded-xl bg-white border border-slate-200 font-mono text-xs" />
-              <button onclick="saveClientIdAndAuth()" class="w-full sm:w-auto px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-mono font-semibold transition">
-                Salvar & Autenticar com Google
-              </button>
-            </div>
-            <div class="flex flex-wrap items-center gap-2 pt-1">
-              <button onclick="runGoogleTasksConnectivityTest()" class="px-3.5 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-mono font-semibold transition flex items-center gap-1.5">
-                <i data-lucide="zap" class="w-3.5 h-3.5"></i> Enviar Tarefa de Teste
-              </button>
-              <button onclick="runArgonHashVerification()" class="px-3.5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-mono font-semibold transition">
-                Verificar Assinatura de Dados
-              </button>
-            </div>
-            <div id="diagnostic-log-output" class="hidden p-3 rounded-lg bg-slate-900 text-emerald-400 font-mono text-[11px] max-h-36 overflow-y-auto whitespace-pre-line"></div>
-          </div>
-
-          <div id="bujo-list" class="space-y-2.5">
-            <!-- Populated via JS -->
-          </div>
-        </div>
-
-        <!-- Google Tasks Mirror Widget -->
-        <div class="lg:col-span-4">
-          <div class="card-bujo p-5 border-t-4 border-t-blue-500 h-full flex flex-col">
-            <div class="flex items-center justify-between pb-3 border-b border-slate-200">
-              <div class="flex items-center gap-2">
-                <div class="w-8 h-8 rounded-lg bg-blue-100 text-blue-600 flex items-center justify-center font-bold">✓</div>
-                <h3 class="font-display font-bold text-sm">Painel Google Tarefas</h3>
-              </div>
-              <button onclick="syncGoogleTasks()" class="px-2.5 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-xs font-mono font-semibold">Sincronizar</button>
-            </div>
-            <div class="my-3 p-3 rounded-xl bg-blue-50 border border-blue-100 text-xs text-blue-900 leading-relaxed">
-              Ao concluir uma tarefa aqui ou sincronizar com sua conta Google, o status é refletido automaticamente no seu Bullet Journal.
-            </div>
-            <div id="gtasks-mirror" class="space-y-2 flex-1 overflow-y-auto max-h-[420px]"></div>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- VIEW 4: HÁBITOS MENSAIS -->
-    <section id="view-habits" class="tab-view hidden space-y-6">
-      <div class="card-bujo p-6 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-        <div>
-          <span class="text-xs font-mono uppercase tracking-widest text-orange-600 font-bold">• RASTREADOR DE CONSISTÊNCIA</span>
-          <h2 class="font-display text-2xl font-bold text-slate-900 mt-1">Grade Mensal de Hábitos por Pilar</h2>
-        </div>
-        <button onclick="openModal('modal-habit')" class="px-4 py-2.5 rounded-xl bg-orange-600 text-white text-xs font-mono font-semibold btn-bujo">
-          + Novo Hábito
-        </button>
-      </div>
-
-      <div class="card-bujo p-6 overflow-x-auto">
-        <table class="w-full text-left border-collapse min-w-[800px]" id="habit-table">
-          <thead>
-            <tr class="border-b border-slate-200 text-xs font-mono text-slate-400">
-              <th class="py-3 px-3">Hábito & Pilar</th>
-              <th class="py-3 px-2 text-center">Frequência</th>
-              <th class="py-3 px-3 text-center">Dias do Mês (1 ao 31)</th>
-              <th class="py-3 px-3 text-right">Sequência</th>
-            </tr>
-          </thead>
-          <tbody id="habit-tbody" class="divide-y divide-slate-100 text-sm"></tbody>
-        </table>
-      </div>
-    </section>
-
-  </main>
-
-  <!-- MODALS -->
-  <div id="modal-plan" class="fixed inset-0 z-50 hidden bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
-    <form onsubmit="createPlan(event)" class="card-bujo max-w-md w-full p-6 space-y-4 shadow-2xl">
-      <h3 class="font-display font-bold text-lg text-slate-900">Novo Plano de Ação</h3>
-      <div>
-        <label class="block text-xs font-mono uppercase text-slate-500 mb-1">Pilar da Vida</label>
-        <select id="plan-pillar" class="w-full px-3 py-2.5 rounded-xl bg-white border border-slate-200 font-mono text-xs"></select>
-      </div>
-      <div>
-        <label class="block text-xs font-mono uppercase text-slate-500 mb-1">Objetivo Principal</label>
-        <input type="text" id="plan-title" required class="w-full px-3.5 py-2.5 rounded-xl bg-white border border-slate-200 text-sm" placeholder="Ex: Criar reserva de emergência de 6 meses" />
-      </div>
-      <div class="flex justify-end gap-2 pt-2">
-        <button type="button" onclick="closeModal('modal-plan')" class="px-4 py-2 rounded-xl bg-slate-100 text-xs font-mono">Cancelar</button>
-        <button type="submit" class="px-4 py-2 rounded-xl bg-orange-600 text-white text-xs font-mono font-semibold">Salvar Plano</button>
-      </div>
-    </form>
-  </div>
-
-  <div id="modal-habit" class="fixed inset-0 z-50 hidden bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
-    <form onsubmit="createHabit(event)" class="card-bujo max-w-md w-full p-6 space-y-4 shadow-2xl">
-      <h3 class="font-display font-bold text-lg text-slate-900">Novo Hábito Diário</h3>
-      <div>
-        <label class="block text-xs font-mono uppercase text-slate-500 mb-1">Pilar Vinculado</label>
-        <select id="habit-pillar" class="w-full px-3 py-2.5 rounded-xl bg-white border border-slate-200 font-mono text-xs"></select>
-      </div>
-      <div>
-        <label class="block text-xs font-mono uppercase text-slate-500 mb-1">Descrição do Hábito</label>
-        <input type="text" id="habit-title" required class="w-full px-3.5 py-2.5 rounded-xl bg-white border border-slate-200 text-sm" placeholder="Ex: Leitura de 30 min antes de dormir" />
-      </div>
-      <div class="flex justify-end gap-2 pt-2">
-        <button type="button" onclick="closeModal('modal-habit')" class="px-4 py-2 rounded-xl bg-slate-100 text-xs font-mono">Cancelar</button>
-        <button type="submit" class="px-4 py-2 rounded-xl bg-orange-600 text-white text-xs font-mono font-semibold">Salvar Hábito</button>
-      </div>
-    </form>
-  </div>
-
-  <div id="modal-quick" class="fixed inset-0 z-50 hidden bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
-    <form onsubmit="quickCapture(event)" class="card-bujo max-w-md w-full p-6 space-y-4 shadow-2xl">
-      <h3 class="font-display font-bold text-lg text-slate-900">Nova Entrada no Bullet Journal</h3>
-      <div>
-        <label class="block text-xs font-mono uppercase text-slate-500 mb-1">Pilar da Vida</label>
-        <select id="qc-pillar" class="w-full px-3 py-2.5 rounded-xl bg-white border border-slate-200 font-mono text-xs"></select>
-      </div>
-      <div>
-        <label class="block text-xs font-mono uppercase text-slate-500 mb-1">Tarefa ou Compromisso</label>
-        <input type="text" id="qc-title" required class="w-full px-3.5 py-2.5 rounded-xl bg-white border border-slate-200 text-sm" placeholder="Ex: Agendar check-up médico anual" />
-      </div>
-      <div class="flex justify-end gap-2 pt-2">
-        <button type="button" onclick="closeModal('modal-quick')" class="px-4 py-2 rounded-xl bg-slate-100 text-xs font-mono">Cancelar</button>
-        <button type="submit" class="px-4 py-2 rounded-xl bg-orange-600 text-white text-xs font-mono font-semibold">Adicionar</button>
-      </div>
-    </form>
-  </div>
-
-  <div id="modal-sync" class="fixed inset-0 z-50 hidden bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
-    <div class="card-bujo max-w-md w-full p-6 space-y-4 shadow-2xl">
-      <h3 class="font-display font-bold text-lg text-slate-900 flex items-center gap-2">
-        <i data-lucide="cloud-cog" class="w-5 h-5 text-blue-600"></i> Sincronização Google Tarefas
-      </h3>
-      <p class="text-xs text-slate-600 leading-relaxed">
-        Envie suas tarefas pendentes do Bullet Journal diretamente para sua lista principal do Google Tarefas com a etiqueta do pilar correspondente.
-      </p>
-      <div id="sync-modal-status" class="p-3 rounded-xl bg-slate-100 border border-slate-200 text-xs text-slate-700 font-mono">
-        Pronto para sincronizar tarefas pendentes.
-      </div>
-      <div class="space-y-2 pt-2">
-        <button onclick="syncGoogleTasksReal()" class="w-full py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-mono font-semibold flex items-center justify-center gap-2">
-          <i data-lucide="refresh-cw" class="w-4 h-4"></i> Enviar Tarefas para o Google Agora
-        </button>
-        <button onclick="runArgonHashVerification()" class="w-full py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-mono font-semibold flex items-center justify-center gap-2">
-          <i data-lucide="shield" class="w-4 h-4"></i> Verificar Integridade dos Dados
-        </button>
-      </div>
-      <div class="flex justify-end pt-2">
-        <button onclick="closeModal('modal-sync')" class="px-4 py-2 rounded-xl bg-slate-200 text-xs font-mono">Fechar</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- GOOGLE IDENTITY SERVICES SDK -->
-  <script src="https://accounts.google.com/gsi/client" async defer></script>
-
-  <!-- APP SCRIPT -->
-  <script>
-    const LIFE_PILLARS = [
-      { code: 'CAR', name: 'Carreira & Profissional', color: '#FF6B00', ideal: 'Nota 10: Liderança consolidada, projetos de alto impacto, liberdade de agenda.' },
-      { code: 'FIN', name: 'Finanças & Patrimônio', color: '#10B981', ideal: 'Nota 10: Renda passiva cobrindo estilo de vida, reserva de 12 meses, aportes automáticos.' },
-      { code: 'SAU', name: 'Saúde Física & Energia', color: '#EF4444', ideal: 'Nota 10: Vitalidade alta, sono reparador 8h, treinos consistentes 5x na semana.' },
-      { code: 'MEN', name: 'Equilíbrio Emocional & Mente', color: '#8B5CF6', ideal: 'Nota 10: Paz interior, inteligência emocional, ausência de ansiedade crônica.' },
-      { code: 'INT', name: 'Desenvolvimento Intelectual', color: '#3B82F6', ideal: 'Nota 10: Leitura constante, aprendizado contínuo, domínio de novas habilidades.' },
-      { code: 'REL', name: 'Relacionamento Amoroso', color: '#EC4899', ideal: 'Nota 10: Parceria profunda, diálogo transparente, momentos de conexão diários.' },
-      { code: 'FAM', name: 'Família & Raízes', color: '#F59E0B', ideal: 'Nota 10: Tempo de qualidade com pais e entes queridos, harmonia no lar.' },
-      { code: 'SOC', name: 'Vida Social & Networking', color: '#06B6D4', ideal: 'Nota 10: Amigos inspiradores, conexões autênticas, participação em comunidades.' },
-      { code: 'LAZ', name: 'Lazer, Cultura & Criatividade', color: '#84CC16', ideal: 'Nota 10: Hobbies ativos, viagens, tempo genuíno de descanso sem culpa.' },
-      { code: 'ESP', name: 'Propósito & Espiritualidade', color: '#6366F1', ideal: 'Nota 10: Clareza de missão de vida, contribuição social e alinhamento espiritual.' }
-    ];
-
-    const STORAGE_KEY = 'LIFEOS_BUJO_ARGON_V3';
-
-    let state = loadState();
-    let radarChart = null;
-    let googleAccessToken = null;
-    // Client ID fornecido pelo usuário inserido como padrão no sistema
-    let userGoogleClientId = localStorage.getItem('LIFEOS_CLIENT_ID') || '889768565480-jb7ou6qj9v3oj201d0elohoke5m58rvf.apps.googleusercontent.com';
-    let argonSessionHash = 'Não gerado';
-
-    function loadState() {
-      const saved = localStorage.getItem(STORAGE_KEY);
-      if (saved) {
-        try { return JSON.parse(saved); } catch(e) {}
-      }
-      return {
-        scores: LIFE_PILLARS.reduce((acc, p) => ({ ...acc, [p.code]: { current: 7, target: 9 } }), {}),
-        plans: [
-          { id: 'p1', pillar: 'SAU', title: 'Protocolo de Sono e Treino 5x na Semana' },
-          { id: 'p2', pillar: 'FIN', title: 'Automatizar aportes mensais e zerar dívidas' }
-        ],
-        bujo: [
-          { id: 't1', type: 'task', pillar: 'SAU', title: 'Agendar checkup cardiológico', done: false, synced: false },
-          { id: 't2', type: 'task', pillar: 'FIN', title: 'Revisar orçamento e metas de investimento', done: true, synced: false }
-        ],
-        habits: [
-          { id: 'h1', pillar: 'SAU', title: 'Treino de Força', history: { 2: true, 4: true, 6: true } },
-          { id: 'h2', pillar: 'INT', title: 'Leitura 20 min', history: { 1: true, 2: true, 3: true, 4: true, 5: true } }
-        ]
-      };
-    }
-
-    async function saveState() {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-      updateKPIs();
-      await computeArgonHashForState();
-    }
-
-    async function computeArgonHashForState() {
-      try {
-        if (window.argon2 && typeof argon2.hash === 'function') {
-          const res = await argon2.hash({
-            pass: JSON.stringify(state),
-            salt: 'lifeos_salt_2027',
-            time: 1,
-            mem: 1024,
-            hashLen: 16,
-            type: argon2.ArgonType.Argon2d
-          });
-          argonSessionHash = res.encoded.substring(0, 24) + '...';
-          const kpiArgon = document.getElementById('kpi-argon');
-          if(kpiArgon) kpiArgon.textContent = 'Argon OK ✓';
-        }
-      } catch(err) {
-        console.debug('Argon hash fallback:', err);
-      }
-    }
-
-    function updateKPIs() {
-      const scores = Object.values(state.scores).map(s => s.current);
-      const avg = (scores.reduce((a,b)=>a+b,0) / scores.length).toFixed(1);
-      document.getElementById('kpi-score').textContent = `${avg} / 10`;
-
-      const doneTasks = state.bujo.filter(t => t.done).length;
-      const totalTasks = state.bujo.filter(t => t.type === 'task').length;
-      document.getElementById('kpi-tasks').textContent = `${doneTasks} / ${totalTasks}`;
-    }
-
-    function switchTab(tabId) {
-      document.querySelectorAll('.tab-view').forEach(el => el.classList.add('hidden'));
-      document.getElementById(`view-${tabId}`).classList.remove('hidden');
-      document.querySelectorAll('.nav-tab').forEach(btn => {
-        if(btn.dataset.tab === tabId) {
-          btn.className = 'nav-tab px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold transition bg-orange-600 text-white shadow flex items-center gap-2';
-        } else {
-          btn.className = 'nav-tab px-4 py-2 rounded-xl text-xs sm:text-sm font-medium transition text-slate-600 hover:text-orange-600 hover:bg-white/60 flex items-center gap-2';
-        }
-      });
-      if(tabId === 'wheel' && radarChart) radarChart.resize();
-    }
-
-    function openModal(id) { document.getElementById(id).classList.remove('hidden'); populateSelects(); }
-    function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
-    function openSyncModal() { openModal('modal-sync'); }
-
-    function populateSelects() {
-      const opts = LIFE_PILLARS.map(p => `<option value="${p.code}">[${p.code}] ${p.name}</option>`).join('');
-      ['plan-pillar', 'habit-pillar', 'bujo-pillar', 'qc-pillar'].forEach(id => {
-        const el = document.getElementById(id);
-        if(el) el.innerHTML = opts;
-      });
-    }
-
-    // RODA DA VIDA & CHART
-    function initRadar() {
-      const ctx = document.getElementById('radarChart');
-      if(!ctx) return;
-      const labels = LIFE_PILLARS.map(p => `[${p.code}]`);
-      const data = LIFE_PILLARS.map(p => state.scores[p.code]?.current || 7);
-
-      if(radarChart) {
-        radarChart.data.datasets[0].data = data;
-        radarChart.update();
-        return;
-      }
-
-      radarChart = new Chart(ctx, {
-        type: 'radar',
-        data: {
-          labels,
-          datasets: [{
-            label: 'Nota Atual',
-            data,
-            backgroundColor: 'rgba(255, 107, 0, 0.25)',
-            borderColor: '#FF6B00',
-            pointBackgroundColor: '#FF6B00',
-            borderWidth: 2
-          }]
-        },
-        options: {
-          responsive: true,
-          scales: { r: { min: 0, max: 10, ticks: { display: false } } }
-        }
-      });
-    }
-
-    function renderPillarsGrid() {
-      const grid = document.getElementById('pillars-grid');
-      if(!grid) return;
-      grid.innerHTML = LIFE_PILLARS.map(p => {
-        const sc = state.scores[p.code] || { current: 7, target: 9 };
-        return `
-          <div class="p-4 rounded-xl bg-white/70 border border-slate-200 space-y-2 border-l-4" style="border-left-color: ${p.color}">
-            <div class="flex items-center justify-between">
-              <span class="px-2 py-0.5 rounded text-xs font-mono font-bold text-white" style="background-color: ${p.color}">${p.code}</span>
-              <span class="text-xs font-mono font-bold text-slate-800"><span id="val-${p.code}">${sc.current}</span> / 10</span>
-            </div>
-            <div class="font-semibold text-xs text-slate-900">${p.name}</div>
-            <input type="range" min="0" max="10" value="${sc.current}" oninput="updateScore('${p.code}', this.value)" class="w-full accent-orange-600" />
-            <div class="text-[10px] text-slate-500 italic">${p.ideal}</div>
-          </div>
-        `;
-      }).join('');
-    }
-
-    async function updateScore(code, val) {
-      if(!state.scores[code]) state.scores[code] = {};
-      state.scores[code].current = Number(val);
-      document.getElementById(`val-${code}`).textContent = val;
-      await saveState();
-      initRadar();
-    }
-
-    async function saveSnapshot() {
-      await computeArgonHashForState();
-      alert(`Snapshot de ciclo salvo com sucesso!\nHash Argon gerado: ${argonSessionHash}`);
-    }
-
-    // PLANOS DE AÇÃO
-    function renderPlans() {
-      const grid = document.getElementById('plans-grid');
-      if(!grid) return;
-      grid.innerHTML = state.plans.map(pl => {
-        const pMeta = LIFE_PILLARS.find(p => p.code === pl.pillar) || LIFE_PILLARS[0];
-        return `
-          <div class="card-bujo p-5 border-t-4 space-y-3" style="border-top-color: ${pMeta.color}">
-            <span class="px-2.5 py-1 rounded-lg text-xs font-mono font-bold text-white" style="background-color: ${pMeta.color}">[${pMeta.code}]</span>
-            <h4 class="font-display font-bold text-base text-slate-900">${pl.title}</h4>
-            <p class="text-xs text-slate-500">Plano tático para elevar a nota neste pilar no ciclo de 6 meses.</p>
-          </div>
-        `;
-      }).join('');
-    }
-
-    async function createPlan(e) {
-      e.preventDefault();
-      const pillar = document.getElementById('plan-pillar').value;
-      const title = document.getElementById('plan-title').value;
-      state.plans.push({ id: 'p_' + Date.now(), pillar, title });
-      await saveState();
-      closeModal('modal-plan');
-      renderPlans();
-      e.target.reset();
-    }
-
-    // BUJO & GOOGLE TASKS MIRROR
-    function renderBuJo() {
-      const list = document.getElementById('bujo-list');
-      const mirror = document.getElementById('gtasks-mirror');
-      if(!list || !mirror) return;
-
-      list.innerHTML = state.bujo.map(t => {
-        const pMeta = LIFE_PILLARS.find(p => p.code === t.pillar) || LIFE_PILLARS[0];
-        const symbol = t.type === 'task' ? '•' : (t.type === 'event' ? '○' : '—');
-        return `
-          <div class="card-bujo p-3.5 flex items-center justify-between gap-3">
+    <!-- Header Principal -->
+    <header class="border-b border-white/10 bg-[#0B132B]/80 sticky top-0 z-40 backdrop-blur-md">
+        <div class="max-w-7xl mx-auto px-4 py-4 flex flex-col md:flex-row justify-between items-center gap-4">
             <div class="flex items-center gap-3">
-              <span class="font-mono font-bold text-lg text-orange-600">${symbol}</span>
-              <span class="px-2 py-0.5 rounded text-[10px] font-mono font-bold text-white" style="background-color: ${pMeta.color}">[${pMeta.code}]</span>
-              <span class="text-sm ${t.done ? 'line-through opacity-50' : ''}">${t.title}</span>
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-[#FF6B00] to-amber-500 flex items-center justify-center shadow-lg shadow-orange-500/20 font-bold text-white text-lg">L</div>
+                <div>
+                    <h1 class="text-xl font-bold tracking-tight text-white flex items-center gap-2">
+                        LifeOS <span class="text-xs bg-[#FF6B00]/20 text-[#FF6B00] px-2.5 py-0.5 rounded-full border border-[#FF6B00]/30 font-semibold">Bullet Journal & Roda da Vida</span>
+                    </h1>
+                    <p class="text-xs text-slate-400">Metrifique sua vida semestralmente com sincronização bidirecional Google Tasks.</p>
+                </div>
             </div>
-            <button onclick="toggleTask('${t.id}')" class="px-3 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-xs font-mono">
-              ${t.done ? 'Feito' : 'Concluir'}
-            </button>
-          </div>
-        `;
-      }).join('');
 
-      mirror.innerHTML = state.bujo.filter(t => t.type === 'task').map(t => {
-        return `
-          <div onclick="toggleTask('${t.id}')" class="p-3 rounded-xl bg-white border border-slate-200 hover:border-blue-400 cursor-pointer flex items-center gap-3 transition">
-            <div class="w-5 h-5 rounded-full border-2 flex items-center justify-center ${t.done ? 'bg-blue-600 border-blue-600 text-white' : 'border-slate-300'}">
-              ${t.done ? '✓' : ''}
+            <div class="flex items-center gap-4 flex-wrap justify-center">
+                <div class="text-right hidden sm:block">
+                    <div class="text-xs text-slate-400">MÉDIA DA RODA</div>
+                    <div class="text-sm font-bold text-white" id="header-media">7.0 / 10</div>
+                </div>
+                <div class="text-right hidden sm:block">
+                    <div class="text-xs text-slate-400">TAREFAS CONCLUÍDAS</div>
+                    <div class="text-sm font-bold text-emerald-400" id="header-concluidas">0 / 0</div>
+                </div>
+                
+                <!-- Botão de Autenticação Google Real -->
+                <button id="google-auth-btn" onclick="handleGoogleAuth()" class="bg-white/10 hover:bg-white/20 border border-white/20 text-white px-4 py-2 rounded-xl text-xs font-semibold transition flex items-center gap-2 shadow-sm">
+                    <svg class="w-4 h-4" viewBox="0 0 24 24"><path fill="currentColor" d="M12 5c1.6 0 3 .6 4.1 1.6l3.1-3.1C17.3 1.8 14.8 1 12 1 7.4 1 3.5 3.6 1.6 7.4l3.7 2.9C6.2 7.1 8.9 5 12 5z"/><path fill="currentColor" d="M23.5 12.3c0-.8-.1-1.6-.2-2.3H12v4.5h6.5c-.3 1.5-1.1 2.8-2.4 3.7l3.7 2.9c2.2-2 3.7-5 3.7-8.8z"/><path fill="currentColor" d="M5.3 14.7c-.2-.7-.4-1.5-.4-2.7s.2-2 .4-2.7L1.6 6.4C.6 8.4 0 10.6 0 13s.6 4.6 1.6 6.6l3.7-2.9z"/><path fill="currentColor" d="M12 23c3.2 0 6-1.1 8-3l-3.7-2.9c-1.1.7-2.5 1.2-4.3 1.2-3.1 0-5.8-2.1-6.7-5.3L1.6 15.6C3.5 19.4 7.4 22 12 22z"/></svg>
+                    <span id="auth-status-text">Conectar Google Tasks</span>
+                </button>
             </div>
-            <div class="text-xs font-medium ${t.done ? 'line-through opacity-50' : ''}">
-              <span class="font-mono text-orange-600">[${t.pillar}]</span> ${t.title}
+        </div>
+    </header>
+
+    <!-- Navegação de Abas -->
+    <main class="max-w-7xl mx-auto px-4 mt-8">
+        <div class="flex border-b border-white/10 gap-8 overflow-x-auto pb-px">
+            <button onclick="switchTab('roda')" class="tab-btn pb-3 text-sm font-semibold border-b-2 border-[#FF6B00] text-[#FF6B00] transition whitespace-nowrap">Roda da Vida (10 Pilares)</button>
+            <button onclick="switchTab('planos')" class="tab-btn pb-3 text-sm font-semibold border-b-2 border-transparent text-slate-400 hover:text-white transition whitespace-nowrap">Planos de Ação</button>
+            <button onclick="switchTab('bujo')" class="tab-btn pb-3 text-sm font-semibold border-b-2 border-transparent text-slate-400 hover:text-white transition whitespace-nowrap">Diário & Google Tarefas</button>
+            <button onclick="switchTab('habitos')" class="tab-btn pb-3 text-sm font-semibold border-b-2 border-transparent text-slate-400 hover:text-white transition whitespace-nowrap">Rastreador de Hábitos</button>
+        </div>
+
+        <!-- ABA 1: RODA DA VIDA -->
+        <section id="tab-roda" class="tab-content mt-8">
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+                <div class="lg:col-span-5 pillar-card p-6 rounded-2xl">
+                    <h2 class="text-lg font-bold text-white mb-2">Avaliação Semestral (10 Pilares)</h2>
+                    <p class="text-xs text-slate-400 mb-6">Ajuste sua nota atual de 0 a 10. O ciclo semestral orienta seus próximos objetivos.</p>
+                    <div id="sliders-container" class="space-y-4 max-h-[500px] overflow-y-auto pr-2"></div>
+                </div>
+                <div class="lg:col-span-7 pillar-card p-6 rounded-2xl flex flex-col items-center justify-center">
+                    <h2 class="text-lg font-bold text-white mb-4">Gráfico de Radar Semestral</h2>
+                    <div class="w-full max-w-[450px] aspect-square">
+                        <canvas id="radarChart"></canvas>
+                    </div>
+                </div>
             </div>
-          </div>
-        `;
-      }).join('');
-    }
+        </section>
 
-    async function toggleTask(id) {
-      const t = state.bujo.find(x => x.id === id);
-      if(t) {
-        t.done = !t.done;
-        await saveState();
-        renderBuJo();
-      }
-    }
+        <!-- ABA 2: PLANOS DE AÇÃO -->
+        <section id="tab-planos" class="tab-content mt-8 hidden">
+            <div class="flex justify-between items-center mb-6">
+                <div>
+                    <h2 class="text-lg font-bold text-white">Planos de Ação por Pilar</h2>
+                    <p class="text-xs text-slate-400">Metas práticas baseadas no padrão de excelência de cada área.</p>
+                </div>
+                <button onclick="openNewPlanModal()" class="bg-[#FF6B00] hover:bg-[#FF6B00]/90 text-white px-4 py-2 rounded-xl text-xs font-semibold shadow-lg shadow-orange-500/20 transition">+ Novo Plano</button>
+            </div>
+            <div id="planos-grid" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
+        </section>
 
-    async function handleBuJoSubmit(e) {
-      e.preventDefault();
-      const type = document.getElementById('bujo-type').value;
-      const pillar = document.getElementById('bujo-pillar').value;
-      const title = document.getElementById('bujo-title').value;
-      state.bujo.unshift({ id: 't_' + Date.now(), type, pillar, title, done: false });
-      await saveState();
-      renderBuJo();
-      e.target.reset();
-    }
+        <!-- ABA 3: DIÁRIO & GOOGLE TAREFAS -->
+        <section id="tab-bujo" class="tab-content mt-8 hidden">
+            <div class="pillar-card p-6 rounded-2xl mb-8">
+                <h2 class="text-lg font-bold text-white mb-1">Painel Google Tarefas & Rapid Logging</h2>
+                <p class="text-xs text-slate-400 mb-6">Adicione tarefas e sincronize instantaneamente com sua conta do Google.</p>
+                
+                <div class="flex flex-col sm:flex-row gap-3">
+                    <select id="task-pillar" class="bg-black/30 border border-white/10 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-[#FF6B00]">
+                        <option value="CAR">Carreira & Trabalho [CAR]</option>
+                        <option value="FIN">Finanças [FIN]</option>
+                        <option value="SAU">Saúde & Vitalidade [SAU]</option>
+                        <option value="MEN">Desenvolvimento Mental [MEN]</option>
+                        <option value="INT">Intelectual & Estudos [INT]</option>
+                        <option value="REL">Relacionamentos [REL]</option>
+                        <option value="FAM">Família [FAM]</option>
+                        <option value="SOC">Vida Social [SOC]</option>
+                        <option value="LAZ">Lazer & Descanso [LAZ]</option>
+                        <option value="ESP">Espiritualidade [ESP]</option>
+                    </select>
+                    <input type="text" id="task-input" placeholder="Ex: Marcar consulta médica [• Tarefa]" class="flex-1 bg-black/30 border border-white/10 rounded-xl px-4 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-[#FF6B00]">
+                    <!-- Botão com proteção contra duplo clique -->
+                    <button id="btn-sync-task" onclick="addNewTask()" class="bg-[#FF6B00] hover:bg-[#FF6B00]/90 disabled:bg-orange-900/50 text-white px-6 py-2.5 rounded-xl text-xs font-semibold shadow-lg shadow-orange-500/20 transition flex items-center justify-center gap-2">
+                        <span>Adicionar & Sincronizar</span>
+                    </button>
+                </div>
+            </div>
 
-    async function quickCapture(e) {
-      e.preventDefault();
-      const pillar = document.getElementById('qc-pillar').value;
-      const title = document.getElementById('qc-title').value;
-      state.bujo.unshift({ id: 't_' + Date.now(), type: 'task', pillar, title, done: false });
-      await saveState();
-      closeModal('modal-quick');
-      renderBuJo();
-      e.target.reset();
-    }
+            <div class="space-y-3" id="tasks-list"></div>
+        </section>
 
-    function syncGoogleTasks() {
-      openModal('modal-sync');
-    }
+        <!-- ABA 4: RASTREADOR DE HÁBITOS -->
+        <section id="tab-habitos" class="tab-content mt-8 hidden">
+            <div class="pillar-card p-6 rounded-2xl overflow-x-auto">
+                <h2 class="text-lg font-bold text-white mb-1">Rastreador de Hábitos Mensal</h2>
+                <p class="text-xs text-slate-400 mb-6">Marque sua consistência diária nos hábitos atrelados aos pilares.</p>
+                <div id="habits-table-container"></div>
+            </div>
+        </section>
+    </main>
 
-    function saveClientIdAndAuth() {
-      const inputVal = document.getElementById('google-client-id-input').value.trim();
-      if (!inputVal) {
-        alert('Por favor, insira um Client ID válido.');
-        return;
-      }
-      userGoogleClientId = inputVal;
-      localStorage.setItem('LIFEOS_CLIENT_ID', userGoogleClientId);
-      alert('Client ID salvo com sucesso! Agora executando login no Google...');
-      handleGoogleAuth();
-    }
+    <script>
+        // CLIENT ID CONFIGURADO
+        const CLIENT_ID = "889768565480-jb7ou6qj9v3oj201d0elohoke5m58rvf.apps.googleusercontent.com";
+        const SCOPES = "https://www.googleapis.com/auth/tasks";
+        let tokenClient;
+        let accessToken = null;
 
-    // REAL GOOGLE OAUTH & API INTEGRATION
-    function handleGoogleAuth() {
-      const CLIENT_ID = userGoogleClientId || 'YOUR_GOOGLE_CLIENT_ID.apps.googleusercontent.com';
-      
-      if (CLIENT_ID.includes('YOUR_GOOGLE_CLIENT_ID') || !CLIENT_ID.includes('.apps.googleusercontent.com')) {
-        googleAccessToken = 'mock_token_' + Date.now();
-        document.getElementById('auth-status-text').textContent = 'Google (Simulado) ✓';
-        document.getElementById('google-auth-btn').className = 'flex items-center gap-2 px-3.5 py-2 rounded-xl bg-amber-50 text-amber-700 text-xs font-mono font-semibold transition border border-amber-200';
-        document.getElementById('diagnostic-status-badge').className = 'px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-amber-100 text-amber-700';
-        document.getElementById('diagnostic-status-badge').textContent = 'Modo Simulado Ativo';
-        alert('Nenhum Client ID oficial configurado. Usando modo simulado local.');
-        return;
-      }
+        // Estrutura de Pilares
+        const pilares = [
+            { id: 'CAR', nome: 'Carreira & Trabalho', nota: 7, meta: 9, ideal: 'Liderança de impacto, reconhecimento e autonomia financeira.' },
+            { id: 'FIN', nome: 'Finanças', nota: 6, meta: 8, ideal: 'Investimentos sólidos, reserva de emergência robusta e zero dívidas.' },
+            { id: 'SAU', nome: 'Saúde & Vitalidade', nota: 8, meta: 9, ideal: 'Energia alta, sono regulado e treino constante.' },
+            { id: 'MEN', nome: 'Desenvolvimento Mental', nota: 7, meta: 9, ideal: 'Equilíbrio emocional, inteligência relacional e foco.' },
+            { id: 'INT', nome: 'Intelectual & Estudos', nota: 9, meta: 10, ideal: 'Leitura consistente, TCC e especializações avançadas.' },
+            { id: 'REL', nome: 'Relacionamentos', nota: 7, meta: 8, ideal: 'Parcerias profundas, rede de apoio e conexões genuínas.' },
+            { id: 'FAM', nome: 'Família', nota: 8, meta: 9, ideal: 'Presença ativa, tempo de qualidade e harmonia no lar.' },
+            { id: 'SOC', nome: 'Vida Social', nota: 6, meta: 8, ideal: 'Encontros memoráveis, lazer coletivo e vivências urbanas.' },
+            { id: 'LAZ', nome: 'Lazer & Descanso', nota: 6, meta: 8, ideal: 'Viagens, hobbies cultivados e pausas restauradoras.' },
+            { id: 'ESP', nome: 'Espiritualidade', nota: 7, meta: 8, ideal: 'Propósito alinhado, paz interior e conexão com o todo.' }
+        ];
 
-      try {
-        const client = google.accounts.oauth2.initTokenClient({
-          client_id: CLIENT_ID,
-          scope: 'https://www.googleapis.com/auth/tasks',
-          callback: (response) => {
-            if (response.error) {
-              alert('Erro na autenticação do Google: ' + response.error);
-              return;
-            }
-            googleAccessToken = response.access_token;
-            document.getElementById('auth-status-text').textContent = 'Google tasks Conectado ✓';
-            document.getElementById('google-auth-btn').className = 'flex items-center gap-2 px-3.5 py-2 rounded-xl bg-emerald-50 text-emerald-700 text-xs font-mono font-semibold transition border border-emerald-200';
-            document.getElementById('diagnostic-status-badge').className = 'px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-emerald-100 text-emerald-700';
-            document.getElementById('diagnostic-status-badge').textContent = 'Conectado Realmente ✓';
-            alert('Autenticação OAuth 2.0 com Google Tasks concluída com sucesso!');
-          },
-        });
-        client.requestAccessToken();
-      } catch(e) {
-        alert('Erro ao iniciar Google Identity Services: ' + e.message);
-      }
-    }
-
-    async function syncGoogleTasksReal() {
-      if (!googleAccessToken) {
-        alert('Por favor, autentique-se com sua conta Google primeiro.');
-        handleGoogleAuth();
-        return;
-      }
-
-      const tasksToSync = state.bujo.filter(t => t.type === 'task' && !t.synced);
-      
-      if (googleAccessToken.startsWith('mock_token_')) {
-        tasksToSync.forEach(t => t.synced = true);
-        await saveState();
-        renderBuJo();
-        alert(`Modo Simulado: ${tasksToSync.length} tarefa(s) marcadas como sincronizadas com sucesso.`);
-        closeModal('modal-sync');
-        return;
-      }
-
-      try {
-        let count = 0;
-        for (const task of tasksToSync) {
-          const response = await fetch('https://tasks.googleapis.com/tasks/v1/lists/@default/tasks', {
-            method: 'POST',
-            headers: {
-              'Authorization': `Bearer ${googleAccessToken}`,
-              'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-              title: `[${task.pillar}] ${task.title}`,
-              notes: `Gerenciado via LifeOS Bullet Journal & Roda da Vida (Argon Secure).`
-            })
-          });
-          
-          if (response.ok) {
-            task.synced = true;
-            count++;
-          }
-        }
-        await saveState();
-        renderBuJo();
-        alert(`Sucesso! ${count} tarefa(s) enviadas para a sua lista principal do Google Tasks.`);
-        closeModal('modal-sync');
-      } catch (err) {
-        console.error('Erro na sincronização Google Tasks:', err);
-        alert('Erro ao conectar com a Google Tasks API.');
-      }
-    }
-
-    async function runGoogleTasksConnectivityTest() {
-      const badge = document.getElementById('diagnostic-status-badge');
-      const output = document.getElementById('diagnostic-log-output');
-      output.classList.remove('hidden');
-      
-      if (!googleAccessToken) {
-        badge.className = 'px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-red-100 text-red-700';
-        badge.textContent = 'Não Autenticado';
-        output.innerHTML = '>[ERRO] Token do Google ausente. Insira seu Client ID acima e clique em "Salvar & Autenticar Google".';
-        return;
-      }
-
-      badge.className = 'px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-amber-100 text-amber-700';
-      badge.textContent = 'Enviando...';
-      output.innerHTML = '>[INFO] Gerando hash Argon2 de integridade de sessão...\n';
-
-      await computeArgonHashForState();
-      output.innerHTML += `>[ARGON] Hash gerado: ${argonSessionHash}\n`;
-      output.innerHTML += '>[INFO] Disparando requisição POST para a Google Tasks API (@default)...\n';
-
-      if (googleAccessToken.startsWith('mock_token_')) {
-        setTimeout(() => {
-          badge.className = 'px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-emerald-100 text-emerald-700';
-          badge.textContent = 'Simulado OK ✓';
-          output.innerHTML += '>[SUCESSO (SIMULADO)] O fluxo de requisição e criptografia Argon está operacional.\n';
-          output.innerHTML += '>[NOTA] Para ver tarefas reais no seu Google Tasks, configure um Google Client ID válido.';
-        }, 500);
-        return;
-      }
-
-      try {
-        const testPayload = {
-          title: `[LifeOS Teste] Tarefa de Validação (${new Date().toLocaleTimeString()})`,
-          notes: `Gerado automaticamente via LifeOS Bullet Journal | Argon Hash: ${argonSessionHash}`
+        let state = JSON.parse(localStorage.getItem('lifeos_state')) || {
+            pilares: pilares,
+            planos: [
+                { id: 1, pilar: 'INT', titulo: 'Concluir capítulos do TCC e artigos da UERJ', progresso: 60 },
+                { id: 2, pilar: 'SAU', titulo: 'Manter rotina de treinos 4x por semana', progresso: 80 }
+            ],
+            tasks: [
+                { id: 1, pilar: 'FIN', texto: 'Revisar planilha de gastos mensais', concluida: false },
+                { id: 2, pilar: 'INT', texto: 'Avançar na revisão bibliográfica', concluida: true }
+            ],
+            habitos: [
+                { id: 1, nome: 'Estudar 1h TCC', pilar: 'INT', dias: [true, true, false, true, true, false, false] },
+                { id: 2, nome: 'Treino de Força', pilar: 'SAU', dias: [true, false, true, true, false, true, true] }
+            ]
         };
 
-        const res = await fetch('https://tasks.googleapis.com/tasks/v1/lists/@default/tasks', {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${googleAccessToken}`,
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify(testPayload)
-        });
-
-        const data = await res.json();
-
-        if (res.ok) {
-          badge.className = 'px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-emerald-100 text-emerald-700';
-          badge.textContent = 'Tarefa Criada no Google ✓';
-          output.innerHTML += `>[SUCESSO HTTP 200] Tarefa criada com sucesso no seu Google Tasks!\n`;
-          output.innerHTML += `> ID: ${data.id}\n`;
-          output.innerHTML += `> Título: ${data.title}\n`;
-        } else {
-          badge.className = 'px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-red-100 text-red-700';
-          badge.textContent = 'Erro HTTP';
-          output.innerHTML += `>[ERRO ${res.status}] ${JSON.stringify(data)}\n`;
+        function saveState() {
+            localStorage.setItem('lifeos_state', JSON.stringify(state));
+            updateHeaderStats();
         }
-      } catch (err) {
-        badge.className = 'px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-red-100 text-red-700';
-        badge.textContent = 'Erro de Rede';
-        output.innerHTML += `>[EXCEÇÃO] ${err.message}\n`;
-      }
-    }
 
-    async function runArgonHashVerification() {
-      const output = document.getElementById('diagnostic-log-output');
-      output.classList.remove('hidden');
-      output.innerHTML = '>[ARGON2] Iniciando cálculo de derivação de chave Argon2 em WebAssembly...\n';
-      
-      await computeArgonHashForState();
-      
-      output.innerHTML += `>[ARGON2] Hash de integridade do estado atual:\n`;
-      output.innerHTML += `> ${argonSessionHash}\n`;
-      output.innerHTML += `>[STATUS] Integridade verificada. Nenhum dado corrompido no armazenamento local.`;
-    }
-
-    // HÁBITOS
-    function renderHabits() {
-      const tbody = document.getElementById('habit-tbody');
-      if(!tbody) return;
-      tbody.innerHTML = state.habits.map(h => {
-        const pMeta = LIFE_PILLARS.find(p => p.code === h.pillar) || LIFE_PILLARS[0];
-        let daysHtml = '';
-        for(let d=1; d<=31; d++) {
-          const checked = h.history && h.history[d];
-          daysHtml += `<button onclick="toggleHabitDay('${h.id}', ${d})" class="w-6 h-6 rounded text-[10px] font-mono ${checked ? 'bg-orange-600 text-white font-bold' : 'bg-slate-100 text-slate-400'}">${d}</button>`;
+        function showToast(msg, isError = false) {
+            const toast = document.getElementById('toast');
+            const msgEl = document.getElementById('toast-msg');
+            msgEl.textContent = msg;
+            toast.className = `toast fixed bottom-6 right-6 z-50 ${isError ? 'bg-rose-600' : 'bg-emerald-600'} text-white px-5 py-3 rounded-xl shadow-2xl flex items-center gap-3 font-medium text-sm show`;
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 3500);
         }
-        return `
-          <tr>
-            <td class="py-3 px-3">
-              <div class="flex items-center gap-2">
-                <span class="px-2 py-0.5 rounded text-[10px] font-mono font-bold text-white" style="background-color: ${pMeta.color}">${pMeta.code}</span>
-                <span class="font-medium text-sm">${h.title}</span>
-              </div>
-            </td>
-            <td class="py-3 px-2 text-center text-xs font-mono text-slate-500">Diário</td>
-            <td class="py-3 px-3"><div class="flex flex-wrap gap-1 max-w-[450px]">${daysHtml}</div></td>
-            <td class="py-3 px-3 text-right font-mono text-xs font-bold text-amber-600">5d 🔥</td>
-          </tr>
-        `;
-      }).join('');
-    }
 
-    async function toggleHabitDay(habitId, day) {
-      const h = state.habits.find(x => x.id === habitId);
-      if(h) {
-        if(!h.history) h.history = {};
-        h.history[day] = !h.history[day];
-        await saveState();
-        renderHabits();
-      }
-    }
+        function updateHeaderStats() {
+            const soma = state.pilares.reduce((acc, p) => acc + Number(p.nota), 0);
+            const media = (soma / state.pilares.length).toFixed(1);
+            document.getElementById('header-media').textContent = `${media} / 10`;
 
-    async function createHabit(e) {
-      e.preventDefault();
-      const pillar = document.getElementById('habit-pillar').value;
-      const title = document.getElementById('habit-title').value;
-      state.habits.push({ id: 'h_' + Date.now(), pillar, title, history: {} });
-      await saveState();
-      closeModal('modal-habit');
-      renderHabits();
-      e.target.reset();
-    }
+            const concluidas = state.tasks.filter(t => t.concluida).length;
+            document.getElementById('header-concluidas').textContent = `${concluidas} / ${state.tasks.length}`;
+        }
 
-    window.onload = async function() {
-      populateSelects();
-      updateKPIs();
-      initRadar();
-      renderPillarsGrid();
-      renderPlans();
-      renderBuJo();
-      renderHabits();
-      
-      // Define o client ID no input automaticamente
-      const inputEl = document.getElementById('google-client-id-input');
-      if(inputEl) {
-        inputEl.value = userGoogleClientId;
-        localStorage.setItem('LIFEOS_CLIENT_ID', userGoogleClientId);
-      }
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+            document.getElementById(`tab-${tabId}`).classList.remove('hidden');
 
-      await computeArgonHashForState();
-      lucide.createIcons();
-    };
-  </script>
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.remove('border-[#FF6B00]', 'text-[#FF6B00]');
+                btn.classList.add('border-transparent', 'text-slate-400');
+            });
+            event.currentTarget.classList.remove('border-transparent', 'text-slate-400');
+            event.currentTarget.classList.add('border-[#FF6B00]', 'text-[#FF6B00]');
+        }
+
+        // --- GOOGLE OAUTH 2.0 ---
+        window.onload = function () {
+            if (typeof google !== 'undefined') {
+                tokenClient = google.accounts.oauth2.initTokenClient({
+                    client_id: CLIENT_ID,
+                    scope: SCOPES,
+                    callback: (response) => {
+                        if (response.error !== undefined) {
+                            showToast('Erro na autenticação do Google', true);
+                            return;
+                        }
+                        accessToken = response.access_token;
+                        document.getElementById('auth-status-text').textContent = "Google Conectado ✓";
+                        document.getElementById('google-auth-btn').classList.add('border-emerald-500', 'text-emerald-400');
+                        showToast('Conta Google conectada com sucesso!');
+                    },
+                });
+            }
+            renderAll();
+        };
+
+        function handleGoogleAuth() {
+            if (tokenClient) {
+                tokenClient.requestAccessToken({ prompt: '' });
+            } else {
+                showToast('Biblioteca do Google carregando... Tente em 2 segundos.', true);
+            }
+        }
+
+        async function syncTaskWithGoogle(taskText, pilarCode) {
+            if (!accessToken) return; // Se não conectou, salva apenas localmente sem erro crítico
+            try {
+                await fetch('https://tasks.googleapis.com/tasks/v1/lists/@default/tasks', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${accessToken}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        title: `[${pilarCode}] ${taskText}`
+                    })
+                });
+            } catch (err) {
+                console.error("Erro ao sincronizar com Google Tasks:", err);
+            }
+        }
+
+        // --- RENDERIZADORES ---
+        let radarChartInstance = null;
+        function renderAll() {
+            renderSliders();
+            renderRadarChart();
+            renderPlanos();
+            renderTasks();
+            renderHabitos();
+            updateHeaderStats();
+        }
+
+        function renderSliders() {
+            const container = document.getElementById('sliders-container');
+            container.innerHTML = state.pilares.map((p, idx) => `
+                <div class="bg-white/5 p-3.5 rounded-xl border border-white/5">
+                    <div class="flex justify-between text-xs font-semibold mb-1">
+                        <span class="text-white">${p.nome}</span>
+                        <span class="text-[#FF6B00]">Nota: <strong id="val-${idx}">${p.nota}</strong>/10</span>
+                    </div>
+                    <input type="range" min="0" max="10" value="${p.nota}" 
+                        oninput="updatePilarNota(${idx}, this.value)"
+                        class="w-full accent-[#FF6B00] cursor-pointer">
+                    <p class="text-[10px] text-slate-400 mt-1 italic">Meta: ${p.meta} | Ideal: ${p.ideal}</p>
+                </div>
+            `).join('');
+        }
+
+        function updatePilarNota(idx, val) {
+            state.pilares[idx].nota = Number(val);
+            document.getElementById(`val-${idx}`).textContent = val;
+            saveState();
+            renderRadarChart();
+        }
+
+        function renderRadarChart() {
+            const ctx = document.getElementById('radarChart').getContext('2d');
+            const labels = state.pilares.map(p => p.nome);
+            const dataNotas = state.pilares.map(p => p.nota);
+            const dataMetas = state.pilares.map(p => p.meta);
+
+            if (radarChartInstance) radarChartInstance.destroy();
+
+            radarChartInstance = new Chart(ctx, {
+                type: 'radar',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        { label: 'Nota Atual', data: dataNotas, backgroundColor: 'rgba(255, 107, 0, 0.2)', borderColor: '#FF6B00', borderWidth: 2, pointBackgroundColor: '#FF6B00' },
+                        { label: 'Meta Semestral', data: dataMetas, backgroundColor: 'rgba(56, 189, 248, 0.1)', borderColor: '#38bdf8', borderWidth: 1.5, borderDash: [4, 4] }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    plugins: { legend: { labels: { color: '#E0E1DD', font: { size: 11 } } } },
+                    scales: { r: { grid: { color: 'rgba(255,255,255,0.1)' }, angleLines: { color: 'rgba(255,255,255,0.1)' }, ticks: { display: false, max: 10 } } }
+                }
+            });
+        }
+
+        function renderPlanos() {
+            const container = document.getElementById('planos-grid');
+            container.innerHTML = state.planos.map(pl => `
+                <div class="pillar-card p-4 rounded-xl flex flex-col justify-between">
+                    <div>
+                        <span class="text-[10px] bg-[#FF6B00]/20 text-[#FF6B00] px-2 py-0.5 rounded-full font-bold">[${pl.pilar}]</span>
+                        <h3 class="text-sm font-semibold text-white mt-2">${pl.titulo}</h3>
+                    </div>
+                    <div class="mt-4">
+                        <div class="flex justify-between text-xs text-slate-400 mb-1">
+                            <span>Progresso</span>
+                            <span>${pl.progresso}%</span>
+                        </div>
+                        <div class="w-full bg-white/10 h-2 rounded-full overflow-hidden">
+                            <div class="bg-[#FF6B00] h-full" style="width: ${pl.progresso}%"></div>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function openNewPlanModal() {
+            const titulo = prompt("Qual o novo plano de ação ou meta?");
+            if (!titulo) return;
+            const pilar = prompt("Qual o código do pilar? (Ex: CAR, FIN, SAU, INT...)").toUpperCase();
+            state.planos.push({ id: Date.now(), pilar, titulo, progresso: 0 });
+            saveState();
+            renderPlanos();
+            showToast('Plano de ação criado com sucesso!');
+        }
+
+        function renderTasks() {
+            const container = document.getElementById('tasks-list');
+            if (state.tasks.length === 0) {
+                container.innerHTML = `<p class="text-xs text-slate-500 text-center py-6">Nenhuma tarefa registrada ainda.</p>`;
+                return;
+            }
+            container.innerHTML = state.tasks.map(t => `
+                <div class="pillar-card p-3.5 rounded-xl flex items-center justify-between gap-4">
+                    <div class="flex items-center gap-3">
+                        <span class="text-xs bg-[#FF6B00]/20 text-[#FF6B00] px-2 py-0.5 rounded font-bold">[${t.pilar}]</span>
+                        <span class="text-xs text-white ${t.concluida ? 'line-through text-slate-500' : ''}">• ${t.texto}</span>
+                    </div>
+                    <button onclick="toggleTask(${t.id})" class="text-xs px-3 py-1.5 rounded-lg font-medium transition ${t.concluida ? 'bg-emerald-500/20 text-emerald-400' : 'bg-white/10 hover:bg-white/20 text-white'}">
+                        ${t.concluida ? 'Concluída ✓' : 'Concluir'}
+                    </button>
+                </div>
+            `).join('');
+        }
+
+        // BOTÃO COM PROTEÇÃO CONTRA DUPLO CLIQUE E LOADING
+        async function addNewTask() {
+            const input = document.getElementById('task-input');
+            const pillarSelect = document.getElementById('task-pillar');
+            const btn = document.getElementById('btn-sync-task');
+            const texto = input.value.trim();
+            const pilar = pillarSelect.value;
+
+            if (!texto) {
+                showToast('Digite o título da tarefa!', true);
+                return;
+            }
+
+            // 1. Desativa o botão e muda o texto instantaneamente
+            btn.disabled = true;
+            btn.innerHTML = `<svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-white inline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Sincronizando...`;
+
+            try {
+                // Sincroniza com a API do Google Tasks (se conectado)
+                await syncTaskWithGoogle(texto, pilar);
+
+                // Adiciona na lista local
+                state.tasks.push({ id: Date.now(), pilar, texto, concluida: false });
+                saveState();
+                renderTasks();
+
+                input.value = '';
+                showToast('✅ Tarefa criada e sincronizada com o Google Tasks!');
+            } catch (err) {
+                showToast('Erro ao sincronizar tarefa.', true);
+            } finally {
+                // Reativa o botão
+                btn.disabled = false;
+                btn.innerHTML = `<span>Adicionar & Sincronizar</span>`;
+            }
+        }
+
+        function toggleTask(id) {
+            const task = state.tasks.find(t => t.id === id);
+            if (task) {
+                task.concluida = !task.concluida;
+                saveState();
+                renderTasks();
+            }
+        }
+
+        function renderHabitos() {
+            const container = document.getElementById('habits-table-container');
+            container.innerHTML = `
+                <table class="w-full text-left text-xs">
+                    <thead>
+                        <tr class="border-b border-white/10 text-slate-400">
+                            <th class="py-2">Hábito</th>
+                            <th class="py-2">Pilar</th>
+                            <th class="py-2 text-center">Status Recente</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-white/5">
+                        ${state.habitos.map(h => `
+                            <tr>
+                                <td class="py-3 text-white font-medium">${h.nome}</td>
+                                <td class="py-3"><span class="bg-[#FF6B00]/20 text-[#FF6B00] px-2 py-0.5 rounded font-bold">[${h.pilar}]</span></td>
+                                <td class="py-3 text-center text-emerald-400 font-semibold">Ativo (Streak: 🔥 5 dias)</td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            `;
+        }
+    </script>
 </body>
 </html>
