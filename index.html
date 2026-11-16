@@ -170,7 +170,7 @@
                 <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4">
                     <div>
                         <h2 class="text-base font-extrabold text-slate-800">Registro Rápido & Google Tarefas</h2>
-                        <p class="text-xs text-slate-500">Prazo, prioridade e conclusão/exclusão sincronizados diretamente com o Google Tarefas.</p>
+                        <p class="text-xs text-slate-500">Prazo, prioridade, recorrência e conclusão sincronizados com o Google Tasks.</p>
                     </div>
                     <button id="btn-pull-tasks" onclick="pullFromGoogleTasks()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-xl text-xs font-bold transition self-start sm:self-auto">
                         ↻ Sincronizar Google Tasks
@@ -202,6 +202,26 @@
                     </select>
 
                     <input type="date" id="task-due-date" title="Data de Prazo" class="sm:col-span-3 bg-white border border-slate-200 rounded-xl px-3 py-2.5 text-xs font-semibold text-slate-700 focus:outline-none focus:border-[#FF6B00]">
+                </div>
+
+                <!-- Bloco de Recorrência -->
+                <div class="bg-slate-50/80 p-3 rounded-2xl border border-slate-200/80 mb-3 flex flex-col sm:flex-row sm:items-center gap-3">
+                    <label class="flex items-center gap-2 cursor-pointer text-xs font-bold text-slate-700 select-none">
+                        <input type="checkbox" id="task-is-recurring" onchange="toggleRecurringOptions(this)" class="w-4 h-4 accent-[#FF6B00] rounded">
+                        🔄 Tarefa Recorrente
+                    </label>
+                    <div id="recurring-options" class="hidden flex items-center gap-3 flex-wrap flex-1">
+                        <select id="task-frequency" class="bg-white border border-slate-200 rounded-xl px-3 py-1.5 text-xs font-semibold text-slate-700 focus:outline-none focus:border-[#FF6B00]">
+                            <option value="diaria">Repetição Diária</option>
+                            <option value="semanal" selected>Repetição Semanal</option>
+                            <option value="quinzenal">Repetição Quinzenal</option>
+                            <option value="mensal">Repetição Mensal</option>
+                        </select>
+                        <div class="flex items-center gap-1.5 text-xs text-slate-600">
+                            <span class="font-semibold">Repetir até:</span>
+                            <input type="date" id="task-recurrence-end" class="bg-white border border-slate-200 rounded-xl px-3 py-1.5 text-xs font-semibold text-slate-700 focus:outline-none focus:border-[#FF6B00]">
+                        </div>
+                    </div>
                 </div>
 
                 <div class="grid grid-cols-1 sm:grid-cols-12 gap-3">
@@ -308,7 +328,7 @@
                 updatedAt: Number(raw.updatedAt) || 0,
                 pilares: Array.isArray(raw.pilares) && raw.pilares.length ? raw.pilares.map((p, i) => ({ meta: 9, ...defaultPilares[i], ...p })) : defaultPilares,
                 planos: Array.isArray(raw.planos) ? raw.planos.map(p => ({ deadline: '', ...p })) : [],
-                tasks: Array.isArray(raw.tasks) ? raw.tasks.map(t => ({ priority: 'MEDIA', dueDate: '', googleTaskId: null, ...t })) : [],
+                tasks: Array.isArray(raw.tasks) ? raw.tasks.map(t => ({ priority: 'MEDIA', dueDate: '', googleTaskId: null, isRecurring: false, frequency: 'none', recurrenceEndDate: '', ...t })) : [],
                 habitos: Array.isArray(raw.habitos) ? raw.habitos.map(h => ({ dias: Array(14).fill(0), ...h })) : []
             };
         }
@@ -324,9 +344,9 @@
                     { id: 102, pilar: 'CAR', titulo: 'Estruturar pipeline de novas oportunidades B2B', deadline: '' }
                 ],
                 tasks: [
-                    { id: 1, pilar: 'INT', planId: 101, priority: 'ALTA', dueDate: '2026-11-25', texto: 'Revisar referencial teórico sobre dependência de recursos', concluida: true, googleTaskId: null },
-                    { id: 2, pilar: 'INT', planId: 101, priority: 'MEDIA', dueDate: '2026-12-02', texto: 'Consolidar metodologia e cronograma de entrega', concluida: false, googleTaskId: null },
-                    { id: 3, pilar: 'FIN', planId: null, priority: 'BAIXA', dueDate: '', texto: 'Atualizar planilha de controle mensal', concluida: false, googleTaskId: null }
+                    { id: 1, pilar: 'INT', planId: 101, priority: 'ALTA', dueDate: '2026-11-25', texto: 'Revisar referencial teórico sobre dependência de recursos', concluida: true, googleTaskId: null, isRecurring: false },
+                    { id: 2, pilar: 'INT', planId: 101, priority: 'MEDIA', dueDate: '2026-12-02', texto: 'Consolidar metodologia e cronograma de entrega', concluida: false, googleTaskId: null, isRecurring: false },
+                    { id: 3, pilar: 'FIN', planId: null, priority: 'BAIXA', dueDate: '', texto: 'Atualizar planilha de controle mensal', concluida: false, googleTaskId: null, isRecurring: false }
                 ],
                 habitos: [
                     { id: 1, nome: 'Estudar 1h para o TCC', pilar: 'INT', dias: [1,1,0,1,1,1,0,1,1,0,1,1,1,0] },
@@ -354,6 +374,32 @@
         function toGoogleTasksRFC3339(isoDate) {
             if (!isoDate || typeof isoDate !== 'string') return undefined;
             return `${isoDate.split('T')[0]}T00:00:00.000Z`;
+        }
+
+        function toggleRecurringOptions(el) {
+            const container = document.getElementById('recurring-options');
+            if (!container) return;
+            if (el.checked) {
+                container.classList.remove('hidden');
+            } else {
+                container.classList.add('hidden');
+            }
+        }
+
+        function getNextDueDate(currentDateStr, frequency) {
+            let baseDate = currentDateStr ? new Date(currentDateStr + 'T00:00:00') : new Date();
+            if (isNaN(baseDate.getTime())) baseDate = new Date();
+            
+            if (frequency === 'diaria') {
+                baseDate.setDate(baseDate.getDate() + 1);
+            } else if (frequency === 'semanal') {
+                baseDate.setDate(baseDate.getDate() + 7);
+            } else if (frequency === 'quinzenal') {
+                baseDate.setDate(baseDate.getDate() + 14);
+            } else if (frequency === 'mensal') {
+                baseDate.setMonth(baseDate.getMonth() + 1);
+            }
+            return baseDate.toISOString().split('T')[0];
         }
 
         function updateCloudStatus(text, colorClass) {
@@ -584,8 +630,11 @@
             const linkedPlan = state.planos.find(p => Number(p.id) === Number(taskObj.planId));
             const prioLabel = PRIORITY_STYLES[taskObj.priority]?.label || 'Média';
             let notesParts = [`Prioridade: ${prioLabel}`];
+            if (taskObj.isRecurring) {
+                notesParts.push(`Recorrência: ${taskObj.frequency}`);
+            }
             if (linkedPlan) {
-                notesParts.push(`Plano de Ação: ${linkedPlan.titulo}${linkedPlan.deadline ? ` (Prazo do Plano: ${formatDateBR(linkedPlan.deadline)})` : ''}`);
+                notesParts.push(`Plano de Ação: ${linkedPlan.titulo}`);
             }
 
             const payload = {
@@ -945,6 +994,7 @@
                         <span class="text-[#FF6B00] font-extrabold text-sm">${t.concluida ? '×' : '•'}</span>
                         <span class="text-[11px] px-2.5 py-0.5 rounded-lg font-extrabold ${PILLAR_COLORS[t.pilar] || 'bg-slate-100 text-slate-700'}">[${t.pilar}]</span>
                         <span class="text-[10px] px-2 py-0.5 rounded-full font-bold ${prio.badge}">${prio.dot} ${prio.label}</span>
+                        ${t.isRecurring ? `<span class="text-[10px] bg-orange-100 text-[#FF6B00] px-2 py-0.5 rounded-full font-bold">🔄 Recorrente (${t.frequency})</span>` : ''}
                         <span class="text-xs font-semibold ${t.concluida ? 'line-through text-slate-400' : 'text-slate-800'}">${t.texto}</span>
                         ${t.dueDate ? `
                             <span class="text-[10px] px-2.5 py-0.5 rounded-full font-bold ${overdue ? 'bg-rose-100 text-rose-700' : 'bg-sky-100 text-sky-700'}">
@@ -974,6 +1024,11 @@
             const planSelect = document.getElementById('task-plan-link');
             const prioritySelect = document.getElementById('task-priority');
             const dueDateInput = document.getElementById('task-due-date');
+            
+            const isRecurringCheck = document.getElementById('task-is-recurring');
+            const frequencySelect = document.getElementById('task-frequency');
+            const recurrenceEndInput = document.getElementById('task-recurrence-end');
+            
             const btn = document.getElementById('btn-sync-task');
 
             const texto = input.value.trim();
@@ -981,6 +1036,10 @@
             const planId = planSelect.value ? Number(planSelect.value) : null;
             const priority = prioritySelect.value || 'MEDIA';
             const dueDate = dueDateInput.value || '';
+            
+            const isRecurring = isRecurringCheck ? isRecurringCheck.checked : false;
+            const frequency = isRecurring ? frequencySelect.value : 'none';
+            const recurrenceEndDate = isRecurring ? recurrenceEndInput.value : '';
 
             if (!texto) {
                 showToast('Escreva a descrição da tarefa primeiro!', true);
@@ -999,7 +1058,10 @@
                     dueDate,
                     texto,
                     concluida: false,
-                    googleTaskId: null
+                    googleTaskId: null,
+                    isRecurring,
+                    frequency,
+                    recurrenceEndDate
                 };
 
                 if (isTokenValid()) {
@@ -1010,6 +1072,11 @@
 
                 input.value = '';
                 dueDateInput.value = '';
+                if (isRecurringCheck) isRecurringCheck.checked = false;
+                if (document.getElementById('recurring-options')) {
+                    document.getElementById('recurring-options').classList.add('hidden');
+                }
+
                 saveState();
                 renderTasks();
                 renderPlanos();
@@ -1048,6 +1115,44 @@
             if (!task) return;
 
             task.concluida = !task.concluida;
+
+            // Se for recorrente e foi marcada como concluída, gera a próxima ocorrência
+            if (task.concluida && task.isRecurring && task.frequency && task.frequency !== 'none') {
+                const baseDate = task.dueDate || new Date().toISOString().split('T')[0];
+                const nextDate = getNextDueDate(baseDate, task.frequency);
+
+                let shouldRepeat = true;
+                if (task.recurrenceEndDate && nextDate > task.recurrenceEndDate) {
+                    shouldRepeat = false;
+                }
+
+                if (shouldRepeat) {
+                    const nextTask = {
+                        id: Date.now() + 1,
+                        pilar: task.pilar,
+                        planId: task.planId,
+                        priority: task.priority,
+                        dueDate: nextDate,
+                        texto: task.texto,
+                        concluida: false,
+                        googleTaskId: null,
+                        isRecurring: true,
+                        frequency: task.frequency,
+                        recurrenceEndDate: task.recurrenceEndDate
+                    };
+
+                    state.tasks.unshift(nextTask);
+
+                    if (isTokenValid()) {
+                        pushTaskToGoogle(nextTask).then(gId => {
+                            nextTask.googleTaskId = gId;
+                            saveState();
+                        });
+                    }
+                    showToast('🔄 Tarefa recorrente concluída! Próxima data gerada.');
+                }
+            }
+
             saveState();
             renderTasks();
             renderPlanos();
@@ -1058,8 +1163,6 @@
 
             if (task.concluida && task.planId) {
                 showToast('🎯 Progresso do Plano de Ação e Google Tasks atualizados!');
-            } else if (isTokenValid() && task.googleTaskId) {
-                showToast(task.concluida ? '✓ Concluída no planner e no Google Tarefas!' : 'Tarefa reaberta no planner e no Google Tarefas.');
             }
         }
 
