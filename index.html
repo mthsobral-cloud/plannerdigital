@@ -4,176 +4,291 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>LifeOS — Bullet Journal & Roda da Vida</title>
-    <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Chart.js para a Roda da Vida -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <!-- Google Identity Services (OAuth 2.0) -->
     <script src="https://accounts.google.com/gsi/client" async defer></script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
-        body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #0B132B; color: #E0E1DD; }
-        .pillar-card { background: rgba(255, 255, 255, 0.03); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.08); }
-        .toast { transition: all 0.3s ease-in-out; transform: translateY(100px); opacity: 0; }
-        .toast.show { transform: translateY(0); opacity: 1; }
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background: linear-gradient(135deg, #F8FAFC 0%, #FFF7ED 50%, #F3E8FF 100%);
+            color: #1E293B;
+        }
+        .glass-card {
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(226, 232, 240, 0.9);
+            box-shadow: 0 4px 20px -2px rgba(15, 23, 42, 0.04);
+        }
+        .toast {
+            transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+            transform: translateY(120px);
+            opacity: 0;
+        }
+        .toast.show {
+            transform: translateY(0);
+            opacity: 1;
+        }
     </style>
 </head>
-<body class="min-h-screen pb-12">
+<body class="min-h-screen pb-16">
 
-    <!-- Toast de Notificação Flutuante -->
-    <div id="toast" class="toast fixed bottom-6 right-6 z-50 bg-emerald-600 text-white px-5 py-3 rounded-xl shadow-2xl flex items-center gap-3 font-medium text-sm">
-        <span id="toast-msg">Tudo sincronizado com sucesso!</span>
+    <!-- Toast de Feedback Flutuante -->
+    <div id="toast" class="toast fixed bottom-6 right-6 z-50 bg-emerald-600 text-white px-5 py-3.5 rounded-2xl shadow-xl flex items-center gap-3 font-semibold text-xs">
+        <span id="toast-msg">Operação realizada com sucesso!</span>
     </div>
 
-    <!-- Header Principal -->
-    <header class="border-b border-white/10 bg-[#0B132B]/80 sticky top-0 z-40 backdrop-blur-md">
-        <div class="max-w-7xl mx-auto px-4 py-4 flex flex-col md:flex-row justify-between items-center gap-4">
-            <div class="flex items-center gap-3">
-                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-[#FF6B00] to-amber-500 flex items-center justify-center shadow-lg shadow-orange-500/20 font-bold text-white text-lg">L</div>
+    <!-- Cabeçalho Claro & Lúdico (Padrão Visual Original) -->
+    <header class="bg-white/90 backdrop-blur-md border-b border-slate-200/80 sticky top-0 z-40">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 py-4 flex flex-col lg:flex-row justify-between items-center gap-4">
+            <!-- Logo e Subtítulo -->
+            <div class="flex items-center gap-3.5">
+                <div class="w-11 h-11 rounded-2xl bg-gradient-to-br from-[#FF6B00] to-amber-500 flex items-center justify-center shadow-md shadow-orange-500/20 text-white font-extrabold text-lg tracking-tighter">
+                    •×
+                </div>
                 <div>
-                    <h1 class="text-xl font-bold tracking-tight text-white flex items-center gap-2">
-                        LifeOS <span class="text-xs bg-[#FF6B00]/20 text-[#FF6B00] px-2.5 py-0.5 rounded-full border border-[#FF6B00]/30 font-semibold">Bullet Journal & Roda da Vida</span>
-                    </h1>
-                    <p class="text-xs text-slate-400">Metrifique sua vida semestralmente com sincronização bidirecional Google Tasks.</p>
+                    <div class="flex items-center gap-2.5 flex-wrap">
+                        <h1 class="text-xl font-extrabold text-slate-900 tracking-tight">LifeOS</h1>
+                        <span class="text-[11px] bg-orange-100 text-[#FF6B00] px-3 py-0.5 rounded-full font-bold">
+                            Bullet Journal & Roda da Vida
+                        </span>
+                    </div>
+                    <p class="text-xs text-slate-500 italic mt-0.5">
+                        "Metrifique sua vida a cada 6 meses com integração direta ao Google Tarefas."
+                    </p>
                 </div>
             </div>
 
-            <div class="flex items-center gap-4 flex-wrap justify-center">
-                <div class="text-right hidden sm:block">
-                    <div class="text-xs text-slate-400">MÉDIA DA RODA</div>
-                    <div class="text-sm font-bold text-white" id="header-media">7.0 / 10</div>
+            <!-- Indicadores Superiores + Botão Google -->
+            <div class="flex items-center gap-3 sm:gap-5 flex-wrap justify-center">
+                <div class="bg-slate-50 border border-slate-200/80 rounded-2xl px-4 py-2 flex items-center gap-5">
+                    <div>
+                        <div class="text-[10px] font-bold uppercase tracking-wider text-slate-400">MÉDIA DA RODA</div>
+                        <div class="text-sm font-extrabold text-slate-800" id="header-media">7.0 / 10</div>
+                    </div>
+                    <div class="h-7 w-px bg-slate-200"></div>
+                    <div>
+                        <div class="text-[10px] font-bold uppercase tracking-wider text-slate-400">TAREFAS CONCLUÍDAS</div>
+                        <div class="text-sm font-extrabold text-emerald-600" id="header-concluidas">0 / 0</div>
+                    </div>
+                    <div class="h-7 w-px bg-slate-200 hidden sm:block"></div>
+                    <div class="hidden sm:block">
+                        <div class="text-[10px] font-bold uppercase tracking-wider text-slate-400">SEGURANÇA LOCAL</div>
+                        <div class="text-xs font-bold text-indigo-600">Protegido ✓</div>
+                    </div>
                 </div>
-                <div class="text-right hidden sm:block">
-                    <div class="text-xs text-slate-400">TAREFAS CONCLUÍDAS</div>
-                    <div class="text-sm font-bold text-emerald-400" id="header-concluidas">0 / 0</div>
-                </div>
-                
-                <!-- Botão de Autenticação Google Real -->
-                <button id="google-auth-btn" onclick="handleGoogleAuth()" class="bg-white/10 hover:bg-white/20 border border-white/20 text-white px-4 py-2 rounded-xl text-xs font-semibold transition flex items-center gap-2 shadow-sm">
-                    <svg class="w-4 h-4" viewBox="0 0 24 24"><path fill="currentColor" d="M12 5c1.6 0 3 .6 4.1 1.6l3.1-3.1C17.3 1.8 14.8 1 12 1 7.4 1 3.5 3.6 1.6 7.4l3.7 2.9C6.2 7.1 8.9 5 12 5z"/><path fill="currentColor" d="M23.5 12.3c0-.8-.1-1.6-.2-2.3H12v4.5h6.5c-.3 1.5-1.1 2.8-2.4 3.7l3.7 2.9c2.2-2 3.7-5 3.7-8.8z"/><path fill="currentColor" d="M5.3 14.7c-.2-.7-.4-1.5-.4-2.7s.2-2 .4-2.7L1.6 6.4C.6 8.4 0 10.6 0 13s.6 4.6 1.6 6.6l3.7-2.9z"/><path fill="currentColor" d="M12 23c3.2 0 6-1.1 8-3l-3.7-2.9c-1.1.7-2.5 1.2-4.3 1.2-3.1 0-5.8-2.1-6.7-5.3L1.6 15.6C3.5 19.4 7.4 22 12 22z"/></svg>
-                    <span id="auth-status-text">Conectar Google Tasks</span>
+
+                <!-- Botão OAuth 2.0 Google -->
+                <button id="google-auth-btn" onclick="handleGoogleAuth()" class="bg-slate-900 hover:bg-slate-800 text-white px-4 py-2.5 rounded-xl text-xs font-bold transition flex items-center gap-2 shadow-sm">
+                    <svg class="w-4 h-4" viewBox="0 0 24 24"><path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.665-5.17 3.665-9.17z"/><path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.11-6.72-4.96H1.29v3.14C3.26 21.3 7.31 24 12 24z"/><path fill="#FBBC05" d="M5.28 14.24c-.24-.72-.38-1.49-.38-2.24s.14-1.52.38-2.24V6.62H1.29C.47 8.24 0 10.06 0 12s.47 3.76 1.29 5.38l3.99-3.14z"/><path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.31 0 3.26 2.7 1.29 6.62l3.99 3.14c.95-2.85 3.6-4.96 6.72-4.96z"/></svg>
+                    <span id="auth-status-text">Conectar Google Tarefas</span>
                 </button>
             </div>
         </div>
     </header>
 
-    <!-- Navegação de Abas -->
-    <main class="max-w-7xl mx-auto px-4 mt-8">
-        <div class="flex border-b border-white/10 gap-8 overflow-x-auto pb-px">
-            <button onclick="switchTab('roda')" class="tab-btn pb-3 text-sm font-semibold border-b-2 border-[#FF6B00] text-[#FF6B00] transition whitespace-nowrap">Roda da Vida (10 Pilares)</button>
-            <button onclick="switchTab('planos')" class="tab-btn pb-3 text-sm font-semibold border-b-2 border-transparent text-slate-400 hover:text-white transition whitespace-nowrap">Planos de Ação</button>
-            <button onclick="switchTab('bujo')" class="tab-btn pb-3 text-sm font-semibold border-b-2 border-transparent text-slate-400 hover:text-white transition whitespace-nowrap">Diário & Google Tarefas</button>
-            <button onclick="switchTab('habitos')" class="tab-btn pb-3 text-sm font-semibold border-b-2 border-transparent text-slate-400 hover:text-white transition whitespace-nowrap">Rastreador de Hábitos</button>
-        </div>
+    <!-- Navegação em Pílulas Laranja -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 mt-7">
+        <nav class="flex items-center gap-2 overflow-x-auto pb-2">
+            <button onclick="switchTab('roda', this)" class="tab-btn px-5 py-2.5 rounded-xl text-xs font-bold transition whitespace-nowrap bg-[#FF6B00] text-white shadow-md shadow-orange-500/20">
+                Roda da Vida (10 Pilares)
+            </button>
+            <button onclick="switchTab('planos', this)" class="tab-btn px-5 py-2.5 rounded-xl text-xs font-bold transition whitespace-nowrap text-slate-600 hover:bg-white/80">
+                Planos de Ação
+            </button>
+            <button onclick="switchTab('bujo', this)" class="tab-btn px-5 py-2.5 rounded-xl text-xs font-bold transition whitespace-nowrap text-slate-600 hover:bg-white/80">
+                Diário & Google Tarefas
+            </button>
+            <button onclick="switchTab('habitos', this)" class="tab-btn px-5 py-2.5 rounded-xl text-xs font-bold transition whitespace-nowrap text-slate-600 hover:bg-white/80">
+                Rastreador de Hábitos
+            </button>
+        </nav>
 
         <!-- ABA 1: RODA DA VIDA -->
-        <section id="tab-roda" class="tab-content mt-8">
-            <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-                <div class="lg:col-span-5 pillar-card p-6 rounded-2xl">
-                    <h2 class="text-lg font-bold text-white mb-2">Avaliação Semestral (10 Pilares)</h2>
-                    <p class="text-xs text-slate-400 mb-6">Ajuste sua nota atual de 0 a 10. O ciclo semestral orienta seus próximos objetivos.</p>
-                    <div id="sliders-container" class="space-y-4 max-h-[500px] overflow-y-auto pr-2"></div>
+        <section id="tab-roda" class="tab-content mt-6">
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+                <div class="lg:col-span-5 glass-card p-6 rounded-3xl">
+                    <div class="flex justify-between items-center mb-1">
+                        <h2 class="text-base font-extrabold text-slate-800">Ciclo Semestral (10 Pilares)</h2>
+                        <span class="text-[11px] font-bold bg-purple-100 text-purple-700 px-2.5 py-0.5 rounded-full">6 Meses</span>
+                    </div>
+                    <p class="text-xs text-slate-500 mb-5">Calibre sua nota atual de 0 a 10 e compare com o estado ideal de cada área.</p>
+                    <div id="sliders-container" class="space-y-3.5 max-h-[520px] overflow-y-auto pr-2"></div>
                 </div>
-                <div class="lg:col-span-7 pillar-card p-6 rounded-2xl flex flex-col items-center justify-center">
-                    <h2 class="text-lg font-bold text-white mb-4">Gráfico de Radar Semestral</h2>
-                    <div class="w-full max-w-[450px] aspect-square">
+
+                <div class="lg:col-span-7 glass-card p-6 rounded-3xl flex flex-col items-center justify-center">
+                    <h2 class="text-base font-extrabold text-slate-800 mb-1">Mapa Visual de Equilíbrio</h2>
+                    <p class="text-xs text-slate-500 mb-4">Nota Atual (Laranja) vs. Meta do Semestre (Azul)</p>
+                    <div class="w-full max-w-[460px] aspect-square">
                         <canvas id="radarChart"></canvas>
                     </div>
                 </div>
             </div>
         </section>
 
-        <!-- ABA 2: PLANOS DE AÇÃO -->
-        <section id="tab-planos" class="tab-content mt-8 hidden">
-            <div class="flex justify-between items-center mb-6">
-                <div>
-                    <h2 class="text-lg font-bold text-white">Planos de Ação por Pilar</h2>
-                    <p class="text-xs text-slate-400">Metas práticas baseadas no padrão de excelência de cada área.</p>
-                </div>
-                <button onclick="openNewPlanModal()" class="bg-[#FF6B00] hover:bg-[#FF6B00]/90 text-white px-4 py-2 rounded-xl text-xs font-semibold shadow-lg shadow-orange-500/20 transition">+ Novo Plano</button>
-            </div>
-            <div id="planos-grid" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
-        </section>
-
-        <!-- ABA 3: DIÁRIO & GOOGLE TAREFAS -->
-        <section id="tab-bujo" class="tab-content mt-8 hidden">
-            <div class="pillar-card p-6 rounded-2xl mb-8">
-                <h2 class="text-lg font-bold text-white mb-1">Painel Google Tarefas & Rapid Logging</h2>
-                <p class="text-xs text-slate-400 mb-6">Adicione tarefas e sincronize instantaneamente com sua conta do Google.</p>
+        <!-- ABA 2: PLANOS DE AÇÃO (CRUD + PROGRESSO AUTOMÁTICO) -->
+        <section id="tab-planos" class="tab-content mt-6 hidden">
+            <div class="glass-card p-6 rounded-3xl mb-6">
+                <h2 class="text-base font-extrabold text-slate-800 mb-1">Criar Novo Plano de Ação</h2>
+                <p class="text-xs text-slate-500 mb-4">Defina metas de 6 meses. Vincule tarefas a estes planos para preencher o progresso automaticamente.</p>
                 
-                <div class="flex flex-col sm:flex-row gap-3">
-                    <select id="task-pillar" class="bg-black/30 border border-white/10 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-[#FF6B00]">
-                        <option value="CAR">Carreira & Trabalho [CAR]</option>
+                <div class="grid grid-cols-1 sm:grid-cols-12 gap-3">
+                    <select id="plan-pillar" class="sm:col-span-3 bg-white border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs font-semibold text-slate-700 focus:outline-none focus:border-[#FF6B00]">
+                        <option value="CAR">Carreira [CAR]</option>
                         <option value="FIN">Finanças [FIN]</option>
-                        <option value="SAU">Saúde & Vitalidade [SAU]</option>
-                        <option value="MEN">Desenvolvimento Mental [MEN]</option>
-                        <option value="INT">Intelectual & Estudos [INT]</option>
+                        <option value="SAU">Saúde [SAU]</option>
+                        <option value="MEN">Mental [MEN]</option>
+                        <option value="INT">Intelectual [INT]</option>
                         <option value="REL">Relacionamentos [REL]</option>
                         <option value="FAM">Família [FAM]</option>
-                        <option value="SOC">Vida Social [SOC]</option>
-                        <option value="LAZ">Lazer & Descanso [LAZ]</option>
+                        <option value="SOC">Social [SOC]</option>
+                        <option value="LAZ">Lazer [LAZ]</option>
                         <option value="ESP">Espiritualidade [ESP]</option>
                     </select>
-                    <input type="text" id="task-input" placeholder="Ex: Marcar consulta médica [• Tarefa]" class="flex-1 bg-black/30 border border-white/10 rounded-xl px-4 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-[#FF6B00]">
-                    <!-- Botão com proteção contra duplo clique -->
-                    <button id="btn-sync-task" onclick="addNewTask()" class="bg-[#FF6B00] hover:bg-[#FF6B00]/90 disabled:bg-orange-900/50 text-white px-6 py-2.5 rounded-xl text-xs font-semibold shadow-lg shadow-orange-500/20 transition flex items-center justify-center gap-2">
-                        <span>Adicionar & Sincronizar</span>
+                    <input type="text" id="plan-title" placeholder="Ex: Concluir entrega final do TCC na UERJ" class="sm:col-span-6 bg-white border border-slate-200 rounded-xl px-4 py-2.5 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-[#FF6B00]">
+                    <button onclick="addNewPlan()" class="sm:col-span-3 bg-[#FF6B00] hover:bg-orange-600 text-white px-5 py-2.5 rounded-xl text-xs font-bold shadow-md shadow-orange-500/20 transition">
+                        + Adicionar Plano
                     </button>
                 </div>
             </div>
 
+            <div id="planos-grid" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
+        </section>
+
+        <!-- ABA 3: DIÁRIO & GOOGLE TAREFAS (COM VÍNCULO AO PLANO E ANTI-DUPLICAÇÃO) -->
+        <section id="tab-bujo" class="tab-content mt-6 hidden">
+            <div class="glass-card p-6 rounded-3xl mb-6">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4">
+                    <div>
+                        <h2 class="text-base font-extrabold text-slate-800">Registro Rápido & Google Tarefas</h2>
+                        <p class="text-xs text-slate-500">Crie tarefas vinculadas a um Pilar e a um Plano de Ação. Sincroniza direto com sua nuvem Google.</p>
+                    </div>
+                    <button onclick="pullFromGoogleTasks()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-xl text-xs font-bold transition self-start sm:self-auto">
+                        ↻ Puxar Status do Google
+                    </button>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-12 gap-3">
+                    <!-- Seletor de Pilar -->
+                    <select id="task-pillar" class="md:col-span-2 bg-white border border-slate-200 rounded-xl px-3 py-2.5 text-xs font-semibold text-slate-700 focus:outline-none focus:border-[#FF6B00]">
+                        <option value="CAR">[CAR] Carreira</option>
+                        <option value="FIN">[FIN] Finanças</option>
+                        <option value="SAU">[SAU] Saúde</option>
+                        <option value="MEN">[MEN] Mental</option>
+                        <option value="INT">[INT] Intelectual</option>
+                        <option value="REL">[REL] Relacion.</option>
+                        <option value="FAM">[FAM] Família</option>
+                        <option value="SOC">[SOC] Social</option>
+                        <option value="LAZ">[LAZ] Lazer</option>
+                        <option value="ESP">[ESP] Espirit.</option>
+                    </select>
+
+                    <!-- Seletor de Plano de Ação Vinculado -->
+                    <select id="task-plan-link" class="md:col-span-3 bg-white border border-slate-200 rounded-xl px-3 py-2.5 text-xs font-semibold text-slate-700 focus:outline-none focus:border-[#FF6B00]">
+                        <option value="">Sem plano vinculado</option>
+                    </select>
+
+                    <!-- Input de Texto -->
+                    <input type="text" id="task-input" placeholder="Ex: Revisar referencial teórico do capítulo 2..." class="md:col-span-4 bg-white border border-slate-200 rounded-xl px-4 py-2.5 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-[#FF6B00]">
+
+                    <!-- Botão com Lock Anti-Duplicação -->
+                    <button id="btn-sync-task" onclick="addNewTask()" class="md:col-span-3 bg-slate-900 hover:bg-slate-800 disabled:bg-slate-400 text-white px-4 py-2.5 rounded-xl text-xs font-bold transition flex items-center justify-center gap-2 shadow-sm">
+                        <span>+ Criar & Sincronizar</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Lista de Tarefas -->
             <div class="space-y-3" id="tasks-list"></div>
         </section>
 
-        <!-- ABA 4: RASTREADOR DE HÁBITOS -->
-        <section id="tab-habitos" class="tab-content mt-8 hidden">
-            <div class="pillar-card p-6 rounded-2xl overflow-x-auto">
-                <h2 class="text-lg font-bold text-white mb-1">Rastreador de Hábitos Mensal</h2>
-                <p class="text-xs text-slate-400 mb-6">Marque sua consistência diária nos hábitos atrelados aos pilares.</p>
+        <!-- ABA 4: RASTREADOR DE HÁBITOS (CRUD + GRADE MENSAL) -->
+        <section id="tab-habitos" class="tab-content mt-6 hidden">
+            <div class="glass-card p-6 rounded-3xl mb-6">
+                <h2 class="text-base font-extrabold text-slate-800 mb-1">Adicionar Novo Hábito Recorrente</h2>
+                <p class="text-xs text-slate-500 mb-4">Acompanhe sua consistência ao longo dos dias do mês.</p>
+
+                <div class="grid grid-cols-1 sm:grid-cols-12 gap-3">
+                    <select id="habit-pillar" class="sm:col-span-3 bg-white border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs font-semibold text-slate-700 focus:outline-none focus:border-[#FF6B00]">
+                        <option value="SAU">Saúde [SAU]</option>
+                        <option value="INT">Intelectual [INT]</option>
+                        <option value="CAR">Carreira [CAR]</option>
+                        <option value="FIN">Finanças [FIN]</option>
+                        <option value="MEN">Mental [MEN]</option>
+                        <option value="REL">Relacionamentos [REL]</option>
+                        <option value="FAM">Família [FAM]</option>
+                        <option value="SOC">Social [SOC]</option>
+                        <option value="LAZ">Lazer [LAZ]</option>
+                        <option value="ESP">Espiritualidade [ESP]</option>
+                    </select>
+                    <input type="text" id="habit-name" placeholder="Ex: Treinar 45 min ou Ler 20 páginas" class="sm:col-span-6 bg-white border border-slate-200 rounded-xl px-4 py-2.5 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-[#FF6B00]">
+                    <button onclick="addNewHabit()" class="sm:col-span-3 bg-[#FF6B00] hover:bg-orange-600 text-white px-5 py-2.5 rounded-xl text-xs font-bold shadow-md shadow-orange-500/20 transition">
+                        + Adicionar Hábito
+                    </button>
+                </div>
+            </div>
+
+            <div class="glass-card p-6 rounded-3xl overflow-x-auto">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-sm font-extrabold text-slate-800">Grade de Consistência (Últimos 14 Dias do Mês)</h3>
+                    <span class="text-xs text-slate-500">Clique nos quadrados para marcar/desmarcar</span>
+                </div>
                 <div id="habits-table-container"></div>
             </div>
         </section>
     </main>
 
     <script>
-        // CLIENT ID CONFIGURADO
         const CLIENT_ID = "889768565480-jb7ou6qj9v3oj201d0elohoke5m58rvf.apps.googleusercontent.com";
         const SCOPES = "https://www.googleapis.com/auth/tasks";
         let tokenClient;
         let accessToken = null;
 
-        // Estrutura de Pilares
-        const pilares = [
-            { id: 'CAR', nome: 'Carreira & Trabalho', nota: 7, meta: 9, ideal: 'Liderança de impacto, reconhecimento e autonomia financeira.' },
-            { id: 'FIN', nome: 'Finanças', nota: 6, meta: 8, ideal: 'Investimentos sólidos, reserva de emergência robusta e zero dívidas.' },
-            { id: 'SAU', nome: 'Saúde & Vitalidade', nota: 8, meta: 9, ideal: 'Energia alta, sono regulado e treino constante.' },
-            { id: 'MEN', nome: 'Desenvolvimento Mental', nota: 7, meta: 9, ideal: 'Equilíbrio emocional, inteligência relacional e foco.' },
-            { id: 'INT', nome: 'Intelectual & Estudos', nota: 9, meta: 10, ideal: 'Leitura consistente, TCC e especializações avançadas.' },
-            { id: 'REL', nome: 'Relacionamentos', nota: 7, meta: 8, ideal: 'Parcerias profundas, rede de apoio e conexões genuínas.' },
-            { id: 'FAM', nome: 'Família', nota: 8, meta: 9, ideal: 'Presença ativa, tempo de qualidade e harmonia no lar.' },
-            { id: 'SOC', nome: 'Vida Social', nota: 6, meta: 8, ideal: 'Encontros memoráveis, lazer coletivo e vivências urbanas.' },
-            { id: 'LAZ', nome: 'Lazer & Descanso', nota: 6, meta: 8, ideal: 'Viagens, hobbies cultivados e pausas restauradoras.' },
-            { id: 'ESP', nome: 'Espiritualidade', nota: 7, meta: 8, ideal: 'Propósito alinhado, paz interior e conexão com o todo.' }
+        const PILLAR_COLORS = {
+            CAR: 'bg-blue-100 text-blue-700',
+            FIN: 'bg-emerald-100 text-emerald-700',
+            SAU: 'bg-rose-100 text-rose-700',
+            MEN: 'bg-purple-100 text-purple-700',
+            INT: 'bg-amber-100 text-amber-800',
+            REL: 'bg-pink-100 text-pink-700',
+            FAM: 'bg-orange-100 text-orange-700',
+            SOC: 'bg-cyan-100 text-cyan-700',
+            LAZ: 'bg-teal-100 text-teal-700',
+            ESP: 'bg-indigo-100 text-indigo-700'
+        };
+
+        const defaultPilares = [
+            { id: 'CAR', nome: 'Carreira & Trabalho', nota: 7, meta: 9, ideal: 'Posicionamento sênior, autonomia e impacto estratégico.' },
+            { id: 'FIN', nome: 'Finanças', nota: 6, meta: 8, ideal: 'Reserva consolidada, previsibilidade e aportes mensais.' },
+            { id: 'SAU', nome: 'Saúde & Vitalidade', nota: 8, meta: 9, ideal: 'Energia constante, treino regular e sono reparador.' },
+            { id: 'MEN', nome: 'Desenvolvimento Mental', nota: 7, meta: 9, ideal: 'Clareza mental, foco e regulação emocional.' },
+            { id: 'INT', nome: 'Intelectual & Estudos', nota: 8, meta: 10, ideal: 'Conclusão do TCC, leitura ativa e domínio técnico.' },
+            { id: 'REL', nome: 'Relacionamentos', nota: 7, meta: 8, ideal: 'Trocas genuínas e vínculos de confiança.' },
+            { id: 'FAM', nome: 'Família', nota: 8, meta: 9, ideal: 'Presença de qualidade e apoio mútuo.' },
+            { id: 'SOC', nome: 'Vida Social', nota: 6, meta: 8, ideal: 'Encontros leves, cultura e lazer compartilhado.' },
+            { id: 'LAZ', nome: 'Lazer & Descanso', nota: 6, meta: 8, ideal: 'Viagens, música e desconexão sem culpa.' },
+            { id: 'ESP', nome: 'Espiritualidade', nota: 7, meta: 8, ideal: 'Alinhamento de propósito e serenidade.' }
         ];
 
-        let state = JSON.parse(localStorage.getItem('lifeos_state')) || {
-            pilares: pilares,
+        let state = JSON.parse(localStorage.getItem('lifeos_v3_state')) || {
+            pilares: defaultPilares,
             planos: [
-                { id: 1, pilar: 'INT', titulo: 'Concluir capítulos do TCC e artigos da UERJ', progresso: 60 },
-                { id: 2, pilar: 'SAU', titulo: 'Manter rotina de treinos 4x por semana', progresso: 80 }
+                { id: 101, pilar: 'INT', titulo: 'Finalizar capítulos do TCC (UERJ)' },
+                { id: 102, pilar: 'CAR', titulo: 'Estruturar pipeline de novas oportunidades B2B' }
             ],
             tasks: [
-                { id: 1, pilar: 'FIN', texto: 'Revisar planilha de gastos mensais', concluida: false },
-                { id: 2, pilar: 'INT', texto: 'Avançar na revisão bibliográfica', concluida: true }
+                { id: 1, pilar: 'INT', planId: 101, texto: 'Revisar referencial teórico sobre dependência de recursos', concluida: true, googleTaskId: null },
+                { id: 2, pilar: 'INT', planId: 101, texto: 'Consolidar metodologia e cronograma de entrega', concluida: false, googleTaskId: null },
+                { id: 3, pilar: 'FIN', planId: null, texto: 'Atualizar planilha de controle mensal', concluida: false, googleTaskId: null }
             ],
             habitos: [
-                { id: 1, nome: 'Estudar 1h TCC', pilar: 'INT', dias: [true, true, false, true, true, false, false] },
-                { id: 2, nome: 'Treino de Força', pilar: 'SAU', dias: [true, false, true, true, false, true, true] }
+                { id: 1, nome: 'Estudar 1h para o TCC', pilar: 'INT', dias: [1,1,0,1,1,1,0,1,1,0,1,1,1,0] },
+                { id: 2, nome: 'Treino / Cardio', pilar: 'SAU', dias: [1,0,1,1,0,1,1,0,1,1,0,1,0,1] }
             ]
         };
 
         function saveState() {
-            localStorage.setItem('lifeos_state', JSON.stringify(state));
+            localStorage.setItem('lifeos_v3_state', JSON.stringify(state));
             updateHeaderStats();
         }
 
@@ -181,10 +296,8 @@
             const toast = document.getElementById('toast');
             const msgEl = document.getElementById('toast-msg');
             msgEl.textContent = msg;
-            toast.className = `toast fixed bottom-6 right-6 z-50 ${isError ? 'bg-rose-600' : 'bg-emerald-600'} text-white px-5 py-3 rounded-xl shadow-2xl flex items-center gap-3 font-medium text-sm show`;
-            setTimeout(() => {
-                toast.classList.remove('show');
-            }, 3500);
+            toast.className = `toast fixed bottom-6 right-6 z-50 ${isError ? 'bg-rose-600' : 'bg-emerald-600'} text-white px-5 py-3.5 rounded-2xl shadow-xl flex items-center gap-3 font-semibold text-xs show`;
+            setTimeout(() => toast.classList.remove('show'), 3500);
         }
 
         function updateHeaderStats() {
@@ -196,19 +309,20 @@
             document.getElementById('header-concluidas').textContent = `${concluidas} / ${state.tasks.length}`;
         }
 
-        function switchTab(tabId) {
+        function switchTab(tabId, btnEl) {
             document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
             document.getElementById(`tab-${tabId}`).classList.remove('hidden');
 
             document.querySelectorAll('.tab-btn').forEach(btn => {
-                btn.classList.remove('border-[#FF6B00]', 'text-[#FF6B00]');
-                btn.classList.add('border-transparent', 'text-slate-400');
+                btn.className = "tab-btn px-5 py-2.5 rounded-xl text-xs font-bold transition whitespace-nowrap text-slate-600 hover:bg-white/80";
             });
-            event.currentTarget.classList.remove('border-transparent', 'text-slate-400');
-            event.currentTarget.classList.add('border-[#FF6B00]', 'text-[#FF6B00]');
+            btnEl.className = "tab-btn px-5 py-2.5 rounded-xl text-xs font-bold transition whitespace-nowrap bg-[#FF6B00] text-white shadow-md shadow-orange-500/20";
+
+            if (tabId === 'bujo') populatePlanDropdown();
+            if (tabId === 'planos') renderPlanos();
         }
 
-        // --- GOOGLE OAUTH 2.0 ---
+        // --- GOOGLE OAUTH 2.0 & SYNC ---
         window.onload = function () {
             if (typeof google !== 'undefined') {
                 tokenClient = google.accounts.oauth2.initTokenClient({
@@ -216,13 +330,13 @@
                     scope: SCOPES,
                     callback: (response) => {
                         if (response.error !== undefined) {
-                            showToast('Erro na autenticação do Google', true);
+                            showToast('Erro ao autenticar com o Google.', true);
                             return;
                         }
                         accessToken = response.access_token;
                         document.getElementById('auth-status-text').textContent = "Google Conectado ✓";
-                        document.getElementById('google-auth-btn').classList.add('border-emerald-500', 'text-emerald-400');
-                        showToast('Conta Google conectada com sucesso!');
+                        document.getElementById('google-auth-btn').classList.replace('bg-slate-900', 'bg-emerald-600');
+                        showToast('✅ Google Tarefas conectado com sucesso!');
                     },
                 });
             }
@@ -233,51 +347,78 @@
             if (tokenClient) {
                 tokenClient.requestAccessToken({ prompt: '' });
             } else {
-                showToast('Biblioteca do Google carregando... Tente em 2 segundos.', true);
+                showToast('Aguarde 2 segundos enquanto a API do Google carrega...', true);
             }
         }
 
-        async function syncTaskWithGoogle(taskText, pilarCode) {
-            if (!accessToken) return; // Se não conectou, salva apenas localmente sem erro crítico
+        async function pushTaskToGoogle(taskText, pilarCode) {
+            if (!accessToken) return null;
+            const res = await fetch('https://tasks.googleapis.com/tasks/v1/lists/@default/tasks', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${accessToken}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ title: `[${pilarCode}] ${taskText}` })
+            });
+            if (!res.ok) throw new Error('Falha na API Google Tasks');
+            const data = await res.json();
+            return data.id;
+        }
+
+        async function pullFromGoogleTasks() {
+            if (!accessToken) {
+                showToast('Conecte sua conta Google no botão superior primeiro!', true);
+                return;
+            }
             try {
-                await fetch('https://tasks.googleapis.com/tasks/v1/lists/@default/tasks', {
-                    method: 'POST',
-                    headers: {
-                        'Authorization': `Bearer ${accessToken}`,
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        title: `[${pilarCode}] ${taskText}`
-                    })
+                const res = await fetch('https://tasks.googleapis.com/tasks/v1/lists/@default/tasks?showCompleted=true&showHidden=true', {
+                    headers: { 'Authorization': `Bearer ${accessToken}` }
                 });
-            } catch (err) {
-                console.error("Erro ao sincronizar com Google Tasks:", err);
+                const data = await res.json();
+                if (!data.items) return;
+
+                let updatedCount = 0;
+                state.tasks.forEach(localTask => {
+                    const remoteMatch = data.items.find(rt =>
+                        (localTask.googleTaskId && rt.id === localTask.googleTaskId) ||
+                        rt.title.includes(localTask.texto)
+                    );
+                    if (remoteMatch) {
+                        const isRemoteDone = remoteMatch.status === 'completed';
+                        if (localTask.concluida !== isRemoteDone) {
+                            localTask.concluida = isRemoteDone;
+                            updatedCount++;
+                        }
+                    }
+                });
+
+                saveState();
+                renderTasks();
+                renderPlanos();
+                showToast(`Sincronizado! ${updatedCount} tarefa(s) atualizada(s) do Google.`);
+            } catch (e) {
+                showToast('Erro ao buscar tarefas do Google.', true);
             }
         }
 
-        // --- RENDERIZADORES ---
+        // --- RODA DA VIDA ---
         let radarChartInstance = null;
-        function renderAll() {
-            renderSliders();
-            renderRadarChart();
-            renderPlanos();
-            renderTasks();
-            renderHabitos();
-            updateHeaderStats();
-        }
-
         function renderSliders() {
             const container = document.getElementById('sliders-container');
             container.innerHTML = state.pilares.map((p, idx) => `
-                <div class="bg-white/5 p-3.5 rounded-xl border border-white/5">
-                    <div class="flex justify-between text-xs font-semibold mb-1">
-                        <span class="text-white">${p.nome}</span>
-                        <span class="text-[#FF6B00]">Nota: <strong id="val-${idx}">${p.nota}</strong>/10</span>
+                <div class="bg-white/90 p-3.5 rounded-2xl border border-slate-200/80">
+                    <div class="flex justify-between items-center text-xs font-bold mb-1.5">
+                        <span class="text-slate-800 flex items-center gap-2">
+                            <span class="px-2 py-0.5 rounded-md text-[10px] ${PILLAR_COLORS[p.id]}">${p.id}</span>
+                            ${p.nome}
+                        </span>
+                        <span class="text-[#FF6B00] font-extrabold"><span id="val-${idx}">${p.nota}</span> / 10</span>
                     </div>
-                    <input type="range" min="0" max="10" value="${p.nota}" 
+                    <input type="range" min="0" max="10" value="${p.nota}"
                         oninput="updatePilarNota(${idx}, this.value)"
-                        class="w-full accent-[#FF6B00] cursor-pointer">
-                    <p class="text-[10px] text-slate-400 mt-1 italic">Meta: ${p.meta} | Ideal: ${p.ideal}</p>
+                        class="w-full accent-[#FF6B00] cursor-pointer h-1.5 bg-slate-200 rounded-lg">
+                    <p class="text-[11px] text-slate-500 mt-1.5"><strong>Ideal:</strong> ${p.ideal}</p>
                 </div>
             `).join('');
         }
@@ -291,113 +432,213 @@
 
         function renderRadarChart() {
             const ctx = document.getElementById('radarChart').getContext('2d');
-            const labels = state.pilares.map(p => p.nome);
-            const dataNotas = state.pilares.map(p => p.nota);
-            const dataMetas = state.pilares.map(p => p.meta);
-
             if (radarChartInstance) radarChartInstance.destroy();
 
             radarChartInstance = new Chart(ctx, {
                 type: 'radar',
                 data: {
-                    labels: labels,
+                    labels: state.pilares.map(p => p.nome),
                     datasets: [
-                        { label: 'Nota Atual', data: dataNotas, backgroundColor: 'rgba(255, 107, 0, 0.2)', borderColor: '#FF6B00', borderWidth: 2, pointBackgroundColor: '#FF6B00' },
-                        { label: 'Meta Semestral', data: dataMetas, backgroundColor: 'rgba(56, 189, 248, 0.1)', borderColor: '#38bdf8', borderWidth: 1.5, borderDash: [4, 4] }
+                        {
+                            label: 'Nota Atual',
+                            data: state.pilares.map(p => p.nota),
+                            backgroundColor: 'rgba(255, 107, 0, 0.22)',
+                            borderColor: '#FF6B00',
+                            borderWidth: 2.5,
+                            pointBackgroundColor: '#FF6B00'
+                        },
+                        {
+                            label: 'Meta Semestral',
+                            data: state.pilares.map(p => p.meta),
+                            backgroundColor: 'rgba(99, 102, 241, 0.08)',
+                            borderColor: '#6366F1',
+                            borderWidth: 1.5,
+                            borderDash: [5, 5],
+                            pointBackgroundColor: '#6366F1'
+                        }
                     ]
                 },
                 options: {
                     responsive: true,
-                    plugins: { legend: { labels: { color: '#E0E1DD', font: { size: 11 } } } },
-                    scales: { r: { grid: { color: 'rgba(255,255,255,0.1)' }, angleLines: { color: 'rgba(255,255,255,0.1)' }, ticks: { display: false, max: 10 } } }
+                    plugins: { legend: { labels: { color: '#334155', font: { size: 11, weight: 'bold' } } } },
+                    scales: {
+                        r: {
+                            min: 0,
+                            max: 10,
+                            ticks: { stepSize: 2, backdropColor: 'transparent', color: '#64748B', font: { size: 10 } },
+                            grid: { color: 'rgba(148, 163, 184, 0.25)' },
+                            angleLines: { color: 'rgba(148, 163, 184, 0.25)' },
+                            pointLabels: { color: '#1E293B', font: { size: 11, weight: '600' } }
+                        }
+                    }
                 }
             });
         }
 
+        // --- PLANOS DE AÇÃO (CRUD + CÁLCULO AUTOMÁTICO DE PROGRESSO) ---
+        function calculatePlanProgress(planId) {
+            const linkedTasks = state.tasks.filter(t => Number(t.planId) === Number(planId));
+            if (linkedTasks.length === 0) return { percent: 0, done: 0, total: 0 };
+            const done = linkedTasks.filter(t => t.concluida).length;
+            return {
+                percent: Math.round((done / linkedTasks.length) * 100),
+                done,
+                total: linkedTasks.length
+            };
+        }
+
         function renderPlanos() {
             const container = document.getElementById('planos-grid');
-            container.innerHTML = state.planos.map(pl => `
-                <div class="pillar-card p-4 rounded-xl flex flex-col justify-between">
+            if (state.planos.length === 0) {
+                container.innerHTML = `<div class="col-span-2 glass-card p-8 rounded-3xl text-center text-xs text-slate-500">Nenhum plano de ação criado ainda. Use o formulário acima para começar.</div>`;
+                return;
+            }
+
+            container.innerHTML = state.planos.map(pl => {
+                const stats = calculatePlanProgress(pl.id);
+                return `
+                <div class="glass-card p-5 rounded-3xl flex flex-col justify-between">
                     <div>
-                        <span class="text-[10px] bg-[#FF6B00]/20 text-[#FF6B00] px-2 py-0.5 rounded-full font-bold">[${pl.pilar}]</span>
-                        <h3 class="text-sm font-semibold text-white mt-2">${pl.titulo}</h3>
-                    </div>
-                    <div class="mt-4">
-                        <div class="flex justify-between text-xs text-slate-400 mb-1">
-                            <span>Progresso</span>
-                            <span>${pl.progresso}%</span>
+                        <div class="flex justify-between items-start gap-2">
+                            <span class="text-[11px] px-2.5 py-0.5 rounded-full font-extrabold ${PILLAR_COLORS[pl.pilar] || 'bg-orange-100 text-orange-700'}">[${pl.pilar}]</span>
+                            <button onclick="deletePlan(${pl.id})" title="Excluir Plano" class="text-slate-400 hover:text-rose-600 text-xs font-bold px-2 py-0.5 rounded-lg hover:bg-rose-50 transition">
+                                ✕ Excluir
+                            </button>
                         </div>
-                        <div class="w-full bg-white/10 h-2 rounded-full overflow-hidden">
-                            <div class="bg-[#FF6B00] h-full" style="width: ${pl.progresso}%"></div>
+                        <h3 class="text-sm font-extrabold text-slate-800 mt-2.5">${pl.titulo}</h3>
+                        <p class="text-[11px] text-slate-500 mt-1">
+                            ${stats.total > 0 ? `${stats.done} de ${stats.total} tarefa(s) vinculada(s) concluída(s)` : 'Nenhuma tarefa vinculada ainda'}
+                        </p>
+                    </div>
+                    <div class="mt-5">
+                        <div class="flex justify-between text-xs font-bold text-slate-700 mb-1.5">
+                            <span>Progresso Automático</span>
+                            <span class="text-[#FF6B00]">${stats.percent}%</span>
+                        </div>
+                        <div class="w-full bg-slate-200/80 h-2.5 rounded-full overflow-hidden">
+                            <div class="bg-gradient-to-r from-[#FF6B00] to-amber-500 h-full transition-all duration-500" style="width: ${stats.percent}%"></div>
                         </div>
                     </div>
                 </div>
-            `).join('');
+            `}).join('');
         }
 
-        function openNewPlanModal() {
-            const titulo = prompt("Qual o novo plano de ação ou meta?");
-            if (!titulo) return;
-            const pilar = prompt("Qual o código do pilar? (Ex: CAR, FIN, SAU, INT...)").toUpperCase();
-            state.planos.push({ id: Date.now(), pilar, titulo, progresso: 0 });
+        function addNewPlan() {
+            const pilar = document.getElementById('plan-pillar').value;
+            const titleInput = document.getElementById('plan-title');
+            const titulo = titleInput.value.trim();
+
+            if (!titulo) {
+                showToast('Digite o título do plano de ação!', true);
+                return;
+            }
+
+            state.planos.push({ id: Date.now(), pilar, titulo });
+            titleInput.value = '';
             saveState();
             renderPlanos();
-            showToast('Plano de ação criado com sucesso!');
+            populatePlanDropdown();
+            showToast('✅ Plano de ação adicionado!');
         }
 
+        function deletePlan(planId) {
+            state.planos = state.planos.filter(p => p.id !== planId);
+            // Desvincula tarefas que apontavam para este plano
+            state.tasks.forEach(t => {
+                if (Number(t.planId) === Number(planId)) t.planId = null;
+            });
+            saveState();
+            renderPlanos();
+            renderTasks();
+            populatePlanDropdown();
+            showToast('Plano de ação excluído.');
+        }
+
+        function populatePlanDropdown() {
+            const select = document.getElementById('task-plan-link');
+            select.innerHTML = `<option value="">Sem plano vinculado</option>` +
+                state.planos.map(pl => `<option value="${pl.id}">[${pl.pilar}] ${pl.titulo}</option>`).join('');
+        }
+
+        // --- TAREFAS & GOOGLE TASKS (COM LOCK ANTI-DUPLICAÇÃO) ---
         function renderTasks() {
             const container = document.getElementById('tasks-list');
             if (state.tasks.length === 0) {
-                container.innerHTML = `<p class="text-xs text-slate-500 text-center py-6">Nenhuma tarefa registrada ainda.</p>`;
+                container.innerHTML = `<div class="glass-card p-8 rounded-3xl text-center text-xs text-slate-500">Nenhuma tarefa registrada no Bullet Journal.</div>`;
                 return;
             }
-            container.innerHTML = state.tasks.map(t => `
-                <div class="pillar-card p-3.5 rounded-xl flex items-center justify-between gap-4">
-                    <div class="flex items-center gap-3">
-                        <span class="text-xs bg-[#FF6B00]/20 text-[#FF6B00] px-2 py-0.5 rounded font-bold">[${t.pilar}]</span>
-                        <span class="text-xs text-white ${t.concluida ? 'line-through text-slate-500' : ''}">• ${t.texto}</span>
+
+            container.innerHTML = state.tasks.map(t => {
+                const linkedPlan = state.planos.find(p => Number(p.id) === Number(t.planId));
+                return `
+                <div class="glass-card p-4 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div class="flex items-start sm:items-center gap-3 flex-wrap">
+                        <span class="text-[#FF6B00] font-extrabold text-sm">${t.concluida ? '×' : '•'}</span>
+                        <span class="text-[11px] px-2.5 py-0.5 rounded-lg font-extrabold ${PILLAR_COLORS[t.pilar] || 'bg-slate-100 text-slate-700'}">[${t.pilar}]</span>
+                        <span class="text-xs font-semibold ${t.concluida ? 'line-through text-slate-400' : 'text-slate-800'}">${t.texto}</span>
+                        ${linkedPlan ? `<span class="text-[10px] bg-purple-100 text-purple-700 px-2.5 py-0.5 rounded-full font-bold">🎯 ${linkedPlan.titulo}</span>` : ''}
                     </div>
-                    <button onclick="toggleTask(${t.id})" class="text-xs px-3 py-1.5 rounded-lg font-medium transition ${t.concluida ? 'bg-emerald-500/20 text-emerald-400' : 'bg-white/10 hover:bg-white/20 text-white'}">
-                        ${t.concluida ? 'Concluída ✓' : 'Concluir'}
-                    </button>
+                    <div class="flex items-center gap-2 self-end sm:self-auto">
+                        <button onclick="toggleTask(${t.id})" class="text-xs px-3.5 py-1.5 rounded-xl font-bold transition ${t.concluida ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 hover:bg-slate-200 text-slate-700'}">
+                            ${t.concluida ? 'Concluída ✓' : 'Concluir'}
+                        </button>
+                        <button onclick="deleteTask(${t.id})" title="Excluir Tarefa" class="text-xs px-2.5 py-1.5 rounded-xl font-bold text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition">
+                            ✕
+                        </button>
+                    </div>
                 </div>
-            `).join('');
+            `}).join('');
         }
 
-        // BOTÃO COM PROTEÇÃO CONTRA DUPLO CLIQUE E LOADING
         async function addNewTask() {
             const input = document.getElementById('task-input');
             const pillarSelect = document.getElementById('task-pillar');
+            const planSelect = document.getElementById('task-plan-link');
             const btn = document.getElementById('btn-sync-task');
+
             const texto = input.value.trim();
             const pilar = pillarSelect.value;
+            const planId = planSelect.value ? Number(planSelect.value) : null;
 
             if (!texto) {
-                showToast('Digite o título da tarefa!', true);
+                showToast('Escreva a descrição da tarefa primeiro!', true);
                 return;
             }
 
-            // 1. Desativa o botão e muda o texto instantaneamente
+            // Bloqueio imediato contra duplo clique
             btn.disabled = true;
-            btn.innerHTML = `<svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-white inline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Sincronizando...`;
+            btn.innerHTML = `<svg class="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> <span>Enviando...</span>`;
 
             try {
-                // Sincroniza com a API do Google Tasks (se conectado)
-                await syncTaskWithGoogle(texto, pilar);
+                let googleTaskId = null;
+                if (accessToken) {
+                    googleTaskId = await pushTaskToGoogle(texto, pilar);
+                }
 
-                // Adiciona na lista local
-                state.tasks.push({ id: Date.now(), pilar, texto, concluida: false });
-                saveState();
-                renderTasks();
+                state.tasks.unshift({
+                    id: Date.now(),
+                    pilar,
+                    planId,
+                    texto,
+                    concluida: false,
+                    googleTaskId
+                });
 
                 input.value = '';
-                showToast('✅ Tarefa criada e sincronizada com o Google Tasks!');
+                saveState();
+                renderTasks();
+                renderPlanos();
+
+                if (accessToken) {
+                    showToast('✅ Tarefa criada e enviada para o Google Tarefas!');
+                } else {
+                    showToast('✅ Tarefa salva localmente! (Conecte o Google no topo para enviar à nuvem)');
+                }
             } catch (err) {
-                showToast('Erro ao sincronizar tarefa.', true);
+                showToast('Erro ao enviar para o Google Tarefas. Tente novamente.', true);
             } finally {
-                // Reativa o botão
                 btn.disabled = false;
-                btn.innerHTML = `<span>Adicionar & Sincronizar</span>`;
+                btn.innerHTML = `<span>+ Criar & Sincronizar</span>`;
             }
         }
 
@@ -407,31 +648,115 @@
                 task.concluida = !task.concluida;
                 saveState();
                 renderTasks();
+                renderPlanos(); // Recalcula barra de progresso do plano vinculado
+                if (task.concluida && task.planId) {
+                    showToast('🎯 Progresso do Plano de Ação atualizado!');
+                }
             }
         }
 
+        function deleteTask(id) {
+            state.tasks = state.tasks.filter(t => t.id !== id);
+            saveState();
+            renderTasks();
+            renderPlanos();
+            showToast('Tarefa removida.');
+        }
+
+        // --- HÁBITOS (CRUD + GRADE INTERATIVA) ---
         function renderHabitos() {
             const container = document.getElementById('habits-table-container');
+            if (state.habitos.length === 0) {
+                container.innerHTML = `<p class="text-xs text-slate-500 text-center py-6">Nenhum hábito cadastrado ainda.</p>`;
+                return;
+            }
+
+            const daysHeader = Array.from({ length: 14 }, (_, i) => `<th class="py-2 px-1.5 text-center text-[10px] font-bold text-slate-400">D${i + 1}</th>`).join('');
+
             container.innerHTML = `
-                <table class="w-full text-left text-xs">
+                <table class="w-full text-left text-xs border-collapse">
                     <thead>
-                        <tr class="border-b border-white/10 text-slate-400">
-                            <th class="py-2">Hábito</th>
-                            <th class="py-2">Pilar</th>
-                            <th class="py-2 text-center">Status Recente</th>
+                        <tr class="border-b border-slate-200">
+                            <th class="py-2.5 pr-4 font-extrabold text-slate-700">Hábito</th>
+                            <th class="py-2.5 px-2 font-extrabold text-slate-700">Pilar</th>
+                            ${daysHeader}
+                            <th class="py-2.5 pl-3 text-right font-extrabold text-slate-700">Ação</th>
                         </tr>
                     </thead>
-                    <tbody class="divide-y divide-white/5">
-                        ${state.habitos.map(h => `
-                            <tr>
-                                <td class="py-3 text-white font-medium">${h.nome}</td>
-                                <td class="py-3"><span class="bg-[#FF6B00]/20 text-[#FF6B00] px-2 py-0.5 rounded font-bold">[${h.pilar}]</span></td>
-                                <td class="py-3 text-center text-emerald-400 font-semibold">Ativo (Streak: 🔥 5 dias)</td>
-                            </tr>
-                        `).join('')}
+                    <tbody class="divide-y divide-slate-100">
+                        ${state.habitos.map(h => {
+                            const cells = h.dias.map((done, dIdx) => `
+                                <td class="py-2.5 px-1 text-center">
+                                    <button onclick="toggleHabitDay(${h.id}, ${dIdx})"
+                                        class="w-6 h-6 rounded-lg font-bold text-[11px] transition ${done ? 'bg-emerald-500 text-white shadow-sm' : 'bg-slate-100 hover:bg-slate-200 text-slate-400'}">
+                                        ${done ? '✓' : '·'}
+                                    </button>
+                                </td>
+                            `).join('');
+
+                            return `
+                                <tr>
+                                    <td class="py-3 pr-4 font-bold text-slate-800 whitespace-nowrap">${h.nome}</td>
+                                    <td class="py-3 px-2"><span class="px-2 py-0.5 rounded-md text-[10px] font-extrabold ${PILLAR_COLORS[h.pilar]}">[${h.pilar}]</span></td>
+                                    ${cells}
+                                    <td class="py-3 pl-3 text-right">
+                                        <button onclick="deleteHabit(${h.id})" class="text-slate-400 hover:text-rose-600 font-bold text-xs px-2 py-1 rounded-lg hover:bg-rose-50 transition">✕</button>
+                                    </td>
+                                </tr>
+                            `;
+                        }).join('')}
                     </tbody>
                 </table>
             `;
+        }
+
+        function addNewHabit() {
+            const pilar = document.getElementById('habit-pillar').value;
+            const nameInput = document.getElementById('habit-name');
+            const nome = nameInput.value.trim();
+
+            if (!nome) {
+                showToast('Digite o nome do hábito!', true);
+                return;
+            }
+
+            state.habitos.push({
+                id: Date.now(),
+                nome,
+                pilar,
+                dias: Array(14).fill(0)
+            });
+
+            nameInput.value = '';
+            saveState();
+            renderHabitos();
+            showToast('✅ Hábito adicionado ao rastreador!');
+        }
+
+        function toggleHabitDay(habitId, dayIdx) {
+            const habit = state.habitos.find(h => h.id === habitId);
+            if (habit) {
+                habit.dias[dayIdx] = habit.dias[dayIdx] ? 0 : 1;
+                saveState();
+                renderHabitos();
+            }
+        }
+
+        function deleteHabit(habitId) {
+            state.habitos = state.habitos.filter(h => h.id !== habitId);
+            saveState();
+            renderHabitos();
+            showToast('Hábito excluído.');
+        }
+
+        function renderAll() {
+            renderSliders();
+            renderRadarChart();
+            renderPlanos();
+            populatePlanDropdown();
+            renderTasks();
+            renderHabitos();
+            updateHeaderStats();
         }
     </script>
 </body>
