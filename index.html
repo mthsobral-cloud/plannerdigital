@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>LifeOS — Bullet Journal & Roda da Vida</title>
     
-    <!-- Configuração PWA para instalação no Celular (Android & iOS) -->
     <meta name="theme-color" content="#FF6B00">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
@@ -41,12 +40,10 @@
 </head>
 <body class="min-h-screen pb-16">
 
-    <!-- Toast de Feedback Flutuante -->
     <div id="toast" class="toast fixed bottom-6 right-6 z-50 bg-emerald-600 text-white px-5 py-3.5 rounded-2xl shadow-xl flex items-center gap-3 font-semibold text-xs">
         <span id="toast-msg">Operação realizada com sucesso!</span>
     </div>
 
-    <!-- Cabeçalho Claro & Lúdico -->
     <header class="bg-white/90 backdrop-blur-md border-b border-slate-200/80 sticky top-0 z-40">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 py-4 flex flex-col lg:flex-row justify-between items-center gap-4">
             <div class="flex items-center gap-3.5">
@@ -97,7 +94,6 @@
         </div>
     </header>
 
-    <!-- Navegação em Pílulas Laranja -->
     <main class="max-w-7xl mx-auto px-4 sm:px-6 mt-7">
         <nav class="flex items-center gap-2 overflow-x-auto pb-2">
             <button onclick="switchTab('roda', this)" class="tab-btn px-5 py-2.5 rounded-xl text-xs font-bold transition whitespace-nowrap bg-[#FF6B00] text-white shadow-md shadow-orange-500/20">
@@ -114,7 +110,6 @@
             </button>
         </nav>
 
-        <!-- ABA 1: RODA DA VIDA -->
         <section id="tab-roda" class="tab-content mt-6">
             <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
                 <div class="lg:col-span-5 glass-card p-6 rounded-3xl">
@@ -129,14 +124,13 @@
                 <div class="lg:col-span-7 glass-card p-6 rounded-3xl flex flex-col items-center justify-center">
                     <h2 class="text-base font-extrabold text-slate-800 mb-1">Mapa Visual de Equilíbrio</h2>
                     <p class="text-xs text-slate-500 mb-4">Nota Atual (Laranja) vs. Meta do Semestre (Azul)</p>
-                    <div class="w-full max-w-[460px] aspect-square">
+                    <div class="w-full max-w-[460px] aspect-square relative">
                         <canvas id="radarChart"></canvas>
                     </div>
                 </div>
             </div>
         </section>
 
-        <!-- ABA 2: PLANOS DE AÇÃO -->
         <section id="tab-planos" class="tab-content mt-6 hidden">
             <div class="glass-card p-6 rounded-3xl mb-6">
                 <h2 class="text-base font-extrabold text-slate-800 mb-1">Criar Novo Plano de Ação</h2>
@@ -168,7 +162,6 @@
             <div id="planos-grid" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
         </section>
 
-        <!-- ABA 3: DIÁRIO & GOOGLE TAREFAS -->
         <section id="tab-bujo" class="tab-content mt-6 hidden">
             <div class="glass-card p-6 rounded-3xl mb-6">
                 <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4">
@@ -190,4 +183,949 @@
                         <option value="INT">[INT] Intelectual</option>
                         <option value="REL">[REL] Relacion.</option>
                         <option value="FAM">[FAM] Família</option>
-                        <option value
+                        <option value="SOC">[SOC] Social</option>
+                        <option value="LAZ">[LAZ] Lazer</option>
+                        <option value="ESP">[ESP] Espirit.</option>
+                    </select>
+
+                    <select id="task-plan-link" class="sm:col-span-4 bg-white border border-slate-200 rounded-xl px-3 py-2.5 text-xs font-semibold text-slate-700 focus:outline-none focus:border-[#FF6B00]">
+                        <option value="">Sem plano vinculado</option>
+                    </select>
+
+                    <select id="task-priority" title="Prioridade da Tarefa" class="sm:col-span-2 bg-white border border-slate-200 rounded-xl px-3 py-2.5 text-xs font-semibold text-slate-700 focus:outline-none focus:border-[#FF6B00]">
+                        <option value="ALTA">🔴 Prioridade Alta</option>
+                        <option value="MEDIA" selected>🟡 Prioridade Média</option>
+                        <option value="BAIXA">🟢 Prioridade Baixa</option>
+                    </select>
+
+                    <input type="date" id="task-due-date" title="Data de Prazo" class="sm:col-span-3 bg-white border border-slate-200 rounded-xl px-3 py-2.5 text-xs font-semibold text-slate-700 focus:outline-none focus:border-[#FF6B00]">
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-12 gap-3">
+                    <input type="text" id="task-input" placeholder="Ex: Revisar referencial teórico do capítulo 2..." class="sm:col-span-9 bg-white border border-slate-200 rounded-xl px-4 py-2.5 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-[#FF6B00]">
+
+                    <button id="btn-sync-task" onclick="addNewTask()" class="sm:col-span-3 bg-slate-900 hover:bg-slate-800 disabled:bg-slate-400 text-white px-4 py-2.5 rounded-xl text-xs font-bold transition flex items-center justify-center gap-2 shadow-sm">
+                        <span>+ Criar & Sincronizar</span>
+                    </button>
+                </div>
+            </div>
+
+            <div class="space-y-3" id="tasks-list"></div>
+        </section>
+
+        <section id="tab-habitos" class="tab-content mt-6 hidden">
+            <div class="glass-card p-6 rounded-3xl mb-6">
+                <h2 class="text-base font-extrabold text-slate-800 mb-1">Adicionar Novo Hábito Recorrente</h2>
+                <p class="text-xs text-slate-500 mb-4">Acompanhe sua consistência ao longo dos dias do mês.</p>
+
+                <div class="grid grid-cols-1 sm:grid-cols-12 gap-3">
+                    <select id="habit-pillar" class="sm:col-span-3 bg-white border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs font-semibold text-slate-700 focus:outline-none focus:border-[#FF6B00]">
+                        <option value="SAU">Saúde [SAU]</option>
+                        <option value="INT">Intelectual [INT]</option>
+                        <option value="CAR">Carreira [CAR]</option>
+                        <option value="FIN">Finanças [FIN]</option>
+                        <option value="MEN">Mental [MEN]</option>
+                        <option value="REL">Relacionamentos [REL]</option>
+                        <option value="FAM">Família [FAM]</option>
+                        <option value="SOC">Social [SOC]</option>
+                        <option value="LAZ">Lazer [LAZ]</option>
+                        <option value="ESP">Espiritualidade [ESP]</option>
+                    </select>
+                    <input type="text" id="habit-name" placeholder="Ex: Treinar 45 min ou Ler 20 páginas" class="sm:col-span-6 bg-white border border-slate-200 rounded-xl px-4 py-2.5 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-[#FF6B00]">
+                    <button onclick="addNewHabit()" class="sm:col-span-3 bg-[#FF6B00] hover:bg-orange-600 text-white px-5 py-2.5 rounded-xl text-xs font-bold shadow-md shadow-orange-500/20 transition">
+                        + Adicionar Hábito
+                    </button>
+                </div>
+            </div>
+
+            <div class="glass-card p-6 rounded-3xl overflow-x-auto">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-sm font-extrabold text-slate-800">Grade de Consistência (Últimos 14 Dias do Mês)</h3>
+                    <span class="text-xs text-slate-500">Clique nos quadrados para marcar/desmarcar</span>
+                </div>
+                <div id="habits-table-container"></div>
+            </div>
+        </section>
+    </main>
+
+    <script>
+        const CLIENT_ID = "889768565480-jb7ou6qj9v3oj201d0elohoke5m58rvf.apps.googleusercontent.com";
+        const SCOPES = "https://www.googleapis.com/auth/tasks https://www.googleapis.com/auth/drive.appdata";
+        const DRIVE_FILE_NAME = "lifeos_cloud_state.json";
+
+        let tokenClient = null;
+        let accessToken = null;
+        let tokenExpiresAt = 0;
+        let driveFileId = null;
+        let saveTimeout = null;
+
+        const PILLAR_COLORS = {
+            CAR: 'bg-blue-100 text-blue-700',
+            FIN: 'bg-emerald-100 text-emerald-700',
+            SAU: 'bg-rose-100 text-rose-700',
+            MEN: 'bg-purple-100 text-purple-700',
+            INT: 'bg-amber-100 text-amber-800',
+            REL: 'bg-pink-100 text-pink-700',
+            FAM: 'bg-orange-100 text-orange-700',
+            SOC: 'bg-cyan-100 text-cyan-700',
+            LAZ: 'bg-teal-100 text-teal-700',
+            ESP: 'bg-indigo-100 text-indigo-700'
+        };
+
+        const PRIORITY_STYLES = {
+            ALTA: { label: 'Alta', badge: 'bg-rose-100 text-rose-700 border border-rose-200', dot: '🔴' },
+            MEDIA: { label: 'Média', badge: 'bg-amber-100 text-amber-800 border border-amber-200', dot: '🟡' },
+            BAIXA: { label: 'Baixa', badge: 'bg-emerald-100 text-emerald-700 border border-emerald-200', dot: '🟢' }
+        };
+
+        const defaultPilares = [
+            { id: 'CAR', nome: 'Carreira & Trabalho', nota: 7, meta: 9, ideal: 'Posicionamento sênior, autonomia e impacto estratégico.' },
+            { id: 'FIN', nome: 'Finanças', nota: 6, meta: 8, ideal: 'Reserva consolidada, previsibilidade e aportes mensais.' },
+            { id: 'SAU', nome: 'Saúde & Vitalidade', nota: 8, meta: 9, ideal: 'Energia constante, treino regular e sono reparador.' },
+            { id: 'MEN', nome: 'Desenvolvimento Mental', nota: 7, meta: 9, ideal: 'Clareza mental, foco e regulação emocional.' },
+            { id: 'INT', nome: 'Intelectual & Estudos', nota: 8, meta: 10, ideal: 'Conclusão do TCC, leitura ativa e domínio técnico.' },
+            { id: 'REL', nome: 'Relacionamentos', nota: 7, meta: 8, ideal: 'Trocas genuínas e vínculos de confiança.' },
+            { id: 'FAM', nome: 'Família', nota: 8, meta: 9, ideal: 'Presença de qualidade e apoio mútuo.' },
+            { id: 'SOC', nome: 'Vida Social', nota: 6, meta: 8, ideal: 'Encontros leves, cultura e lazer compartilhado.' },
+            { id: 'LAZ', nome: 'Lazer & Descanso', nota: 6, meta: 8, ideal: 'Viagens, música e desconexão sem culpa.' },
+            { id: 'ESP', nome: 'Espiritualidade', nota: 7, meta: 8, ideal: 'Alinhamento de propósito e serenidade.' }
+        ];
+
+        function normalizeState(raw) {
+            const base = {
+                updatedAt: 0,
+                pilares: defaultPilares,
+                planos: [],
+                tasks: [],
+                habitos: []
+            };
+            if (!raw || typeof raw !== 'object') return base;
+            return {
+                updatedAt: Number(raw.updatedAt) || 0,
+                pilares: Array.isArray(raw.pilares) && raw.pilares.length ? raw.pilares : defaultPilares,
+                planos: Array.isArray(raw.planos) ? raw.planos.map(p => ({ deadline: '', ...p })) : [],
+                tasks: Array.isArray(raw.tasks) ? raw.tasks.map(t => ({ priority: 'MEDIA', dueDate: '', googleTaskId: null, ...t })) : [],
+                habitos: Array.isArray(raw.habitos) ? raw.habitos.map(h => ({ dias: Array(14).fill(0), ...h })) : []
+            };
+        }
+
+        let state;
+        try {
+            const storedRaw = localStorage.getItem('lifeos_v3_state');
+            state = storedRaw ? normalizeState(JSON.parse(storedRaw)) : normalizeState({
+                updatedAt: 0,
+                pilares: defaultPilares,
+                planos: [
+                    { id: 101, pilar: 'INT', titulo: 'Finalizar capítulos do TCC (UERJ)', deadline: '2026-12-15' },
+                    { id: 102, pilar: 'CAR', titulo: 'Estruturar pipeline de novas oportunidades B2B', deadline: '' }
+                ],
+                tasks: [
+                    { id: 1, pilar: 'INT', planId: 101, priority: 'ALTA', dueDate: '2026-11-25', texto: 'Revisar referencial teórico sobre dependência de recursos', concluida: true, googleTaskId: null },
+                    { id: 2, pilar: 'INT', planId: 101, priority: 'MEDIA', dueDate: '2026-12-02', texto: 'Consolidar metodologia e cronograma de entrega', concluida: false, googleTaskId: null },
+                    { id: 3, pilar: 'FIN', planId: null, priority: 'BAIXA', dueDate: '', texto: 'Atualizar planilha de controle mensal', concluida: false, googleTaskId: null }
+                ],
+                habitos: [
+                    { id: 1, nome: 'Estudar 1h para o TCC', pilar: 'INT', dias: [1,1,0,1,1,1,0,1,1,0,1,1,1,0] },
+                    { id: 2, nome: 'Treino / Cardio', pilar: 'SAU', dias: [1,0,1,1,0,1,1,0,1,1,0,1,0,1] }
+                ]
+            });
+        } catch (e) {
+            localStorage.removeItem('lifeos_v3_state');
+            state = normalizeState(null);
+        }
+
+        function formatDateBR(isoDate) {
+            if (!isoDate || typeof isoDate !== 'string') return '';
+            const parts = isoDate.split('T')[0].split('-');
+            if (parts.length !== 3) return isoDate;
+            return `${parts[2]}/${parts[1]}/${parts[0]}`;
+        }
+
+        function isDateOverdue(isoDate) {
+            if (!isoDate || typeof isoDate !== 'string') return false;
+            const todayStr = new Date().toISOString().split('T')[0];
+            return isoDate.split('T')[0] < todayStr;
+        }
+
+        function toGoogleTasksRFC3339(isoDate) {
+            if (!isoDate || typeof isoDate !== 'string') return undefined;
+            return `${isoDate.split('T')[0]}T00:00:00.000Z`;
+        }
+
+        function updateCloudStatus(text, colorClass) {
+            const el = document.getElementById('cloud-sync-status');
+            if (!el) return;
+            el.textContent = text;
+            el.className = `text-xs font-bold ${colorClass}`;
+        }
+
+        function handleExpiredToken() {
+            accessToken = null;
+            tokenExpiresAt = 0;
+            updateCloudStatus('Sessão expirada ↻', 'text-rose-600');
+            const authBtn = document.getElementById('google-auth-btn');
+            if (authBtn) {
+                authBtn.classList.remove('bg-emerald-600', 'bg-slate-900');
+                authBtn.classList.add('bg-amber-600');
+            }
+            const statusText = document.getElementById('auth-status-text');
+            if (statusText) statusText.textContent = "Reconectar Google";
+            showToast('⚠️ Sessão Google expirou (1h). Clique em "Reconectar Google" para sincronizar.', true);
+        }
+
+        function isTokenValid() {
+            if (!accessToken) return false;
+            if (tokenExpiresAt && Date.now() >= tokenExpiresAt) {
+                handleExpiredToken();
+                return false;
+            }
+            return true;
+        }
+
+        function saveState(skipCloud = false, customTimestamp = null) {
+            state.updatedAt = customTimestamp !== null ? customTimestamp : Date.now();
+            try {
+                localStorage.setItem('lifeos_v3_state', JSON.stringify(state));
+            } catch (e) {}
+            updateHeaderStats();
+
+            if (!skipCloud) {
+                if (isTokenValid()) {
+                    updateCloudStatus('Salvando...', 'text-amber-600');
+                    clearTimeout(saveTimeout);
+                    saveTimeout = setTimeout(() => {
+                        saveStateToGoogleDrive();
+                    }, 900);
+                } else if (accessToken === null && tokenExpiresAt > 0) {
+                    updateCloudStatus('Sessão expirada ↻', 'text-rose-600');
+                }
+            }
+        }
+
+        function showToast(msg, isError = false) {
+            const toast = document.getElementById('toast');
+            const msgEl = document.getElementById('toast-msg');
+            if (!toast || !msgEl) return;
+            msgEl.textContent = msg;
+            toast.className = `toast fixed bottom-6 right-6 z-50 ${isError ? 'bg-rose-600' : 'bg-emerald-600'} text-white px-5 py-3.5 rounded-2xl shadow-xl flex items-center gap-3 font-semibold text-xs show`;
+            setTimeout(() => toast.classList.remove('show'), 3800);
+        }
+
+        function updateHeaderStats() {
+            const mediaEl = document.getElementById('header-media');
+            const concEl = document.getElementById('header-concluidas');
+            if (mediaEl && state.pilares.length) {
+                const soma = state.pilares.reduce((acc, p) => acc + Number(p.nota || 0), 0);
+                mediaEl.textContent = `${(soma / state.pilares.length).toFixed(1)} / 10`;
+            }
+            if (concEl) {
+                const concluidas = state.tasks.filter(t => t.concluida).length;
+                concEl.textContent = `${concluidas} / ${state.tasks.length}`;
+            }
+        }
+
+        function switchTab(tabId, btnEl) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+            const target = document.getElementById(`tab-${tabId}`);
+            if (target) target.classList.remove('hidden');
+
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.className = "tab-btn px-5 py-2.5 rounded-xl text-xs font-bold transition whitespace-nowrap text-slate-600 hover:bg-white/80";
+            });
+            if (btnEl) {
+                btnEl.className = "tab-btn px-5 py-2.5 rounded-xl text-xs font-bold transition whitespace-nowrap bg-[#FF6B00] text-white shadow-md shadow-orange-500/20";
+            }
+
+            if (tabId === 'bujo') populatePlanDropdown();
+            if (tabId === 'planos') renderPlanos();
+        }
+
+        function initGoogleClient() {
+            if (tokenClient) return;
+            if (typeof google !== 'undefined' && google.accounts && google.accounts.oauth2) {
+                tokenClient = google.accounts.oauth2.initTokenClient({
+                    client_id: CLIENT_ID,
+                    scope: SCOPES,
+                    callback: async (response) => {
+                        if (response.error !== undefined) {
+                            showToast('Erro ao autenticar com o Google.', true);
+                            return;
+                        }
+                        accessToken = response.access_token;
+                        const expiresInSec = Number(response.expires_in) || 3600;
+                        tokenExpiresAt = Date.now() + (expiresInSec - 120) * 1000;
+
+                        const authBtn = document.getElementById('google-auth-btn');
+                        if (authBtn) {
+                            authBtn.classList.remove('bg-slate-900', 'bg-amber-600');
+                            authBtn.classList.add('bg-emerald-600');
+                        }
+                        const statusText = document.getElementById('auth-status-text');
+                        if (statusText) statusText.textContent = "Conectado ✓";
+
+                        await syncWithGoogleDrive(false);
+                    },
+                });
+            }
+        }
+
+        function handleGoogleAuth() {
+            initGoogleClient();
+            if (tokenClient) {
+                tokenClient.requestAccessToken({ prompt: '' });
+            } else {
+                showToast('Aguarde 2 segundos enquanto a biblioteca do Google carrega...', true);
+            }
+        }
+
+        async function forceCloudPull() {
+            if (!isTokenValid()) {
+                showToast('Conecte sua conta Google primeiro para puxar da nuvem.', true);
+                handleGoogleAuth();
+                return;
+            }
+            const icon = document.getElementById('force-sync-icon');
+            if (icon) icon.classList.add('animate-spin', 'inline-block');
+            await syncWithGoogleDrive(true);
+            if (icon) icon.classList.remove('animate-spin', 'inline-block');
+        }
+
+        async function syncWithGoogleDrive(forcePull = false) {
+            if (!isTokenValid()) return;
+            updateCloudStatus('Sincronizando...', 'text-indigo-600');
+
+            try {
+                const searchRes = await fetch(
+                    `https://www.googleapis.com/drive/v3/files?spaces=appDataFolder&q=name='${DRIVE_FILE_NAME}'&fields=files(id,name,modifiedTime)`,
+                    { headers: { 'Authorization': `Bearer ${accessToken}` } }
+                );
+
+                if (searchRes.status === 401) { handleExpiredToken(); return; }
+                if (!searchRes.ok) throw new Error('Falha ao consultar Google Drive API');
+
+                const searchData = await searchRes.json();
+
+                if (searchData.files && searchData.files.length > 0) {
+                    driveFileId = searchData.files[0].id;
+                    const fileRes = await fetch(
+                        `https://www.googleapis.com/drive/v3/files/${driveFileId}?alt=media`,
+                        { headers: { 'Authorization': `Bearer ${accessToken}` } }
+                    );
+
+                    if (fileRes.status === 401) { handleExpiredToken(); return; }
+
+                    const cloudRaw = await fileRes.json();
+                    const cloudState = normalizeState(cloudRaw);
+                    const cloudTimestamp = Number(cloudState.updatedAt) || 0;
+                    const localTimestamp = Number(state.updatedAt) || 0;
+
+                    if (forcePull || cloudTimestamp >= localTimestamp) {
+                        state = cloudState;
+                        saveState(true, cloudTimestamp);
+                        renderAll();
+                        updateCloudStatus('Sincronizado ✓', 'text-emerald-600');
+                        showToast('☁️ Versão mais recente carregada do Google Drive!');
+                    } else if (localTimestamp > cloudTimestamp) {
+                        await saveStateToGoogleDrive();
+                        showToast('☁️ Alterações locais mais recentes enviadas para o Drive!');
+                    }
+                } else {
+                    await saveStateToGoogleDrive();
+                    showToast('☁️ Backup inicial criado no Google Drive!');
+                }
+            } catch (err) {
+                console.error(err);
+                updateCloudStatus('Erro Drive API', 'text-rose-600');
+                showToast('Erro ao sincronizar com Google Drive.', true);
+            }
+        }
+
+        async function saveStateToGoogleDrive() {
+            if (!isTokenValid()) return;
+            try {
+                const metadata = { name: DRIVE_FILE_NAME, mimeType: 'application/json' };
+                if (!driveFileId) metadata.parents = ['appDataFolder'];
+
+                const form = new FormData();
+                form.append('metadata', new Blob([JSON.stringify(metadata)], { type: 'application/json' }));
+                form.append('file', new Blob([JSON.stringify(state)], { type: 'application/json' }));
+
+                const url = driveFileId
+                    ? `https://www.googleapis.com/upload/drive/v3/files/${driveFileId}?uploadType=multipart`
+                    : `https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart`;
+
+                const res = await fetch(url, {
+                    method: driveFileId ? 'PATCH' : 'POST',
+                    headers: { 'Authorization': `Bearer ${accessToken}` },
+                    body: form
+                });
+
+                if (res.status === 401) { handleExpiredToken(); return; }
+
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data.id) driveFileId = data.id;
+                    updateCloudStatus('Sincronizado ✓', 'text-emerald-600');
+                } else {
+                    updateCloudStatus('Falha ao salvar', 'text-rose-600');
+                }
+            } catch (err) {
+                updateCloudStatus('Falha de rede', 'text-rose-600');
+            }
+        }
+
+        async function pushTaskToGoogle(taskObj) {
+            if (!isTokenValid()) return null;
+
+            const linkedPlan = state.planos.find(p => Number(p.id) === Number(taskObj.planId));
+            const prioLabel = PRIORITY_STYLES[taskObj.priority]?.label || 'Média';
+            let notesParts = [`Prioridade: ${prioLabel}`];
+            if (linkedPlan) {
+                notesParts.push(`Plano de Ação: ${linkedPlan.titulo}${linkedPlan.deadline ? ` (Prazo do Plano: ${formatDateBR(linkedPlan.deadline)})` : ''}`);
+            }
+
+            const payload = {
+                title: `[${taskObj.pilar}] ${taskObj.texto}`,
+                notes: notesParts.join(' | ')
+            };
+            if (taskObj.dueDate) {
+                payload.due = toGoogleTasksRFC3339(taskObj.dueDate);
+            }
+
+            const res = await fetch('https://tasks.googleapis.com/tasks/v1/lists/@default/tasks', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${accessToken}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(payload)
+            });
+
+            if (res.status === 401) { handleExpiredToken(); return null; }
+            if (!res.ok) throw new Error('Falha na API Google Tasks');
+            const data = await res.json();
+            return data.id;
+        }
+
+        async function updateTaskStatusInGoogle(googleTaskId, isCompleted) {
+            if (!isTokenValid() || !googleTaskId) return;
+            try {
+                const payload = { status: isCompleted ? 'completed' : 'needsAction' };
+                if (!isCompleted) payload.completed = null;
+
+                const res = await fetch(`https://tasks.googleapis.com/tasks/v1/lists/@default/tasks/${googleTaskId}`, {
+                    method: 'PATCH',
+                    headers: {
+                        'Authorization': `Bearer ${accessToken}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(payload)
+                });
+                if (res.status === 401) handleExpiredToken();
+            } catch (err) {
+                console.error(err);
+            }
+        }
+
+        async function deleteTaskFromGoogle(googleTaskId) {
+            if (!isTokenValid() || !googleTaskId) return;
+            try {
+                const res = await fetch(`https://tasks.googleapis.com/tasks/v1/lists/@default/tasks/${googleTaskId}`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': `Bearer ${accessToken}` }
+                });
+                if (res.status === 401) handleExpiredToken();
+            } catch (err) {
+                console.error(err);
+            }
+        }
+
+        async function pullFromGoogleTasks() {
+            if (!isTokenValid()) {
+                showToast('Conecte sua conta Google no botão superior primeiro!', true);
+                return;
+            }
+            const btn = document.getElementById('btn-pull-tasks');
+            if (btn) {
+                btn.disabled = true;
+                btn.textContent = '↻ Sincronizando...';
+            }
+
+            try {
+                const res = await fetch('https://tasks.googleapis.com/tasks/v1/lists/@default/tasks?showCompleted=true&showHidden=true&maxResults=100', {
+                    headers: { 'Authorization': `Bearer ${accessToken}` }
+                });
+                if (res.status === 401) { handleExpiredToken(); return; }
+                const data = await res.json();
+                const remoteItems = data.items || [];
+
+                let updatedCount = 0;
+                let deletedCount = 0;
+
+                state.tasks = state.tasks.filter(localTask => {
+                    if (!localTask.googleTaskId) return true;
+
+                    const remoteMatch = remoteItems.find(rt => rt.id === localTask.googleTaskId);
+                    if (!remoteMatch || remoteMatch.deleted) {
+                        deletedCount++;
+                        return false;
+                    }
+
+                    const isRemoteDone = remoteMatch.status === 'completed';
+                    if (localTask.concluida !== isRemoteDone) {
+                        localTask.concluida = isRemoteDone;
+                        updatedCount++;
+                    }
+
+                    if (remoteMatch.due) {
+                        const remoteDate = remoteMatch.due.split('T')[0];
+                        if (localTask.dueDate !== remoteDate) {
+                            localTask.dueDate = remoteDate;
+                            updatedCount++;
+                        }
+                    }
+
+                    return true;
+                });
+
+                saveState();
+                renderTasks();
+                renderPlanos();
+                showToast(`Google Tasks sincronizado: ${updatedCount} atualizada(s), ${deletedCount} removida(s).`);
+            } catch (e) {
+                showToast('Erro ao sincronizar com Google Tasks.', true);
+            } finally {
+                if (btn) {
+                    btn.disabled = false;
+                    btn.textContent = '↻ Sincronizar Google Tasks';
+                }
+            }
+        }
+
+        let radarChartInstance = null;
+        function renderSliders() {
+            const container = document.getElementById('sliders-container');
+            if (!container) return;
+            container.innerHTML = state.pilares.map((p, idx) => `
+                <div class="bg-white/90 p-3.5 rounded-2xl border border-slate-200/80">
+                    <div class="flex justify-between items-center text-xs font-bold mb-1.5">
+                        <span class="text-slate-800 flex items-center gap-2">
+                            <span class="px-2 py-0.5 rounded-md text-[10px] ${PILLAR_COLORS[p.id] || 'bg-slate-100'}">${p.id}</span>
+                            ${p.nome}
+                        </span>
+                        <span class="text-[#FF6B00] font-extrabold"><span id="val-${idx}">${p.nota}</span> / 10</span>
+                    </div>
+                    <input type="range" min="0" max="10" value="${p.nota}"
+                        oninput="updatePilarNota(${idx}, this.value)"
+                        class="w-full accent-[#FF6B00] cursor-pointer h-1.5 bg-slate-200 rounded-lg">
+                    <p class="text-[11px] text-slate-500 mt-1.5"><strong>Ideal:</strong> ${p.ideal}</p>
+                </div>
+            `).join('');
+        }
+
+        function updatePilarNota(idx, val) {
+            state.pilares[idx].nota = Number(val);
+            const valEl = document.getElementById(`val-${idx}`);
+            if (valEl) valEl.textContent = val;
+            saveState();
+            renderRadarChart();
+        }
+
+        function renderRadarChart() {
+            try {
+                if (typeof Chart === 'undefined') return;
+                const canvas = document.getElementById('radarChart');
+                if (!canvas) return;
+                const ctx = canvas.getContext('2d');
+                if (radarChartInstance) radarChartInstance.destroy();
+
+                radarChartInstance = new Chart(ctx, {
+                    type: 'radar',
+                    data: {
+                        labels: state.pilares.map(p => p.nome),
+                        datasets: [
+                            {
+                                label: 'Nota Atual',
+                                data: state.pilares.map(p => p.nota),
+                                backgroundColor: 'rgba(255, 107, 0, 0.22)',
+                                borderColor: '#FF6B00',
+                                borderWidth: 2.5,
+                                pointBackgroundColor: '#FF6B00'
+                            },
+                            {
+                                label: 'Meta Semestral',
+                                data: state.pilares.map(p => p.meta),
+                                backgroundColor: 'rgba(99, 102, 241, 0.08)',
+                                borderColor: '#6366F1',
+                                borderWidth: 1.5,
+                                borderDash: [5, 5],
+                                pointBackgroundColor: '#6366F1'
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: { legend: { labels: { color: '#334155', font: { size: 11, weight: 'bold' } } } },
+                        scales: {
+                            r: {
+                                min: 0,
+                                max: 10,
+                                ticks: { stepSize: 2, backdropColor: 'transparent', color: '#64748B', font: { size: 10 } },
+                                grid: { color: 'rgba(148, 163, 184, 0.25)' },
+                                angleLines: { color: 'rgba(148, 163, 184, 0.25)' },
+                                pointLabels: { color: '#1E293B', font: { size: 11, weight: '600' } }
+                            }
+                        }
+                    }
+                });
+            } catch (e) {
+                console.warn('Chart.js indisponível no momento:', e);
+            }
+        }
+
+        function calculatePlanProgress(planId) {
+            const linkedTasks = state.tasks.filter(t => Number(t.planId) === Number(planId));
+            if (linkedTasks.length === 0) return { percent: 0, done: 0, total: 0 };
+            const done = linkedTasks.filter(t => t.concluida).length;
+            return {
+                percent: Math.round((done / linkedTasks.length) * 100),
+                done,
+                total: linkedTasks.length
+            };
+        }
+
+        function renderPlanos() {
+            const container = document.getElementById('planos-grid');
+            if (!container) return;
+            if (state.planos.length === 0) {
+                container.innerHTML = `<div class="col-span-2 glass-card p-8 rounded-3xl text-center text-xs text-slate-500">Nenhum plano de ação criado ainda. Use o formulário acima para começar.</div>`;
+                return;
+            }
+
+            container.innerHTML = state.planos.map(pl => {
+                const stats = calculatePlanProgress(pl.id);
+                const overdue = pl.deadline && stats.percent < 100 && isDateOverdue(pl.deadline);
+                return `
+                <div class="glass-card p-5 rounded-3xl flex flex-col justify-between">
+                    <div>
+                        <div class="flex justify-between items-start gap-2 flex-wrap">
+                            <div class="flex items-center gap-2 flex-wrap">
+                                <span class="text-[11px] px-2.5 py-0.5 rounded-full font-extrabold ${PILLAR_COLORS[pl.pilar] || 'bg-orange-100 text-orange-700'}">[${pl.pilar}]</span>
+                                ${pl.deadline ? `
+                                    <span class="text-[11px] px-2.5 py-0.5 rounded-full font-bold ${overdue ? 'bg-rose-100 text-rose-700' : 'bg-slate-100 text-slate-600'}">
+                                        📅 Prazo: ${formatDateBR(pl.deadline)}${overdue ? ' (Vencido)' : ''}
+                                    </span>
+                                ` : ''}
+                            </div>
+                            <button onclick="deletePlan(${pl.id})" title="Excluir Plano" class="text-slate-400 hover:text-rose-600 text-xs font-bold px-2 py-0.5 rounded-lg hover:bg-rose-50 transition">
+                                ✕ Excluir
+                            </button>
+                        </div>
+                        <h3 class="text-sm font-extrabold text-slate-800 mt-2.5">${pl.titulo}</h3>
+                        <p class="text-[11px] text-slate-500 mt-1">
+                            ${stats.total > 0 ? `${stats.done} de ${stats.total} tarefa(s) vinculada(s) concluída(s)` : 'Nenhuma tarefa vinculada ainda'}
+                        </p>
+                    </div>
+                    <div class="mt-5">
+                        <div class="flex justify-between text-xs font-bold text-slate-700 mb-1.5">
+                            <span>Progresso Automático</span>
+                            <span class="text-[#FF6B00]">${stats.percent}%</span>
+                        </div>
+                        <div class="w-full bg-slate-200/80 h-2.5 rounded-full overflow-hidden">
+                            <div class="bg-gradient-to-r from-[#FF6B00] to-amber-500 h-full transition-all duration-500" style="width: ${stats.percent}%"></div>
+                        </div>
+                    </div>
+                </div>
+            `}).join('');
+        }
+
+        function addNewPlan() {
+            const pilar = document.getElementById('plan-pillar').value;
+            const titleInput = document.getElementById('plan-title');
+            const deadlineInput = document.getElementById('plan-deadline');
+            const titulo = titleInput.value.trim();
+            const deadline = deadlineInput.value || '';
+
+            if (!titulo) {
+                showToast('Digite o título do plano de ação!', true);
+                return;
+            }
+
+            state.planos.push({ id: Date.now(), pilar, titulo, deadline });
+            titleInput.value = '';
+            deadlineInput.value = '';
+            saveState();
+            renderPlanos();
+            populatePlanDropdown();
+            showToast('✅ Plano de ação adicionado!');
+        }
+
+        function deletePlan(planId) {
+            state.planos = state.planos.filter(p => p.id !== planId);
+            state.tasks.forEach(t => {
+                if (Number(t.planId) === Number(planId)) t.planId = null;
+            });
+            saveState();
+            renderPlanos();
+            renderTasks();
+            populatePlanDropdown();
+            showToast('Plano de ação excluído.');
+        }
+
+        function populatePlanDropdown() {
+            const select = document.getElementById('task-plan-link');
+            if (!select) return;
+            select.innerHTML = `<option value="">Sem plano vinculado</option>` +
+                state.planos.map(pl => `<option value="${pl.id}">[${pl.pilar}] ${pl.titulo}${pl.deadline ? ` (até ${formatDateBR(pl.deadline)})` : ''}</option>`).join('');
+        }
+
+        function renderTasks() {
+            const container = document.getElementById('tasks-list');
+            if (!container) return;
+            if (state.tasks.length === 0) {
+                container.innerHTML = `<div class="glass-card p-8 rounded-3xl text-center text-xs text-slate-500">Nenhuma tarefa registrada no Bullet Journal.</div>`;
+                return;
+            }
+
+            const prioRank = { ALTA: 1, MEDIA: 2, BAIXA: 3 };
+            const sortedTasks = [...state.tasks].sort((a, b) => {
+                if (a.concluida !== b.concluida) return a.concluida ? 1 : -1;
+                return (prioRank[a.priority] || 2) - (prioRank[b.priority] || 2);
+            });
+
+            container.innerHTML = sortedTasks.map(t => {
+                const linkedPlan = state.planos.find(p => Number(p.id) === Number(t.planId));
+                const prio = PRIORITY_STYLES[t.priority] || PRIORITY_STYLES.MEDIA;
+                const overdue = t.dueDate && !t.concluida && isDateOverdue(t.dueDate);
+
+                return `
+                <div class="glass-card p-4 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div class="flex items-start sm:items-center gap-2.5 flex-wrap">
+                        <span class="text-[#FF6B00] font-extrabold text-sm">${t.concluida ? '×' : '•'}</span>
+                        <span class="text-[11px] px-2.5 py-0.5 rounded-lg font-extrabold ${PILLAR_COLORS[t.pilar] || 'bg-slate-100 text-slate-700'}">[${t.pilar}]</span>
+                        <span class="text-[10px] px-2 py-0.5 rounded-full font-bold ${prio.badge}">${prio.dot} ${prio.label}</span>
+                        <span class="text-xs font-semibold ${t.concluida ? 'line-through text-slate-400' : 'text-slate-800'}">${t.texto}</span>
+                        ${t.dueDate ? `
+                            <span class="text-[10px] px-2.5 py-0.5 rounded-full font-bold ${overdue ? 'bg-rose-100 text-rose-700' : 'bg-sky-100 text-sky-700'}">
+                                📅 ${formatDateBR(t.dueDate)}
+                            </span>
+                        ` : ''}
+                        ${linkedPlan ? `<span class="text-[10px] bg-purple-100 text-purple-700 px-2.5 py-0.5 rounded-full font-bold">🎯 ${linkedPlan.titulo}</span>` : ''}
+                    </div>
+                    <div class="flex items-center gap-2 self-end sm:self-auto">
+                        <button onclick="toggleTask(${t.id})" class="text-xs px-3.5 py-1.5 rounded-xl font-bold transition ${t.concluida ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 hover:bg-slate-200 text-slate-700'}">
+                            ${t.concluida ? 'Concluída ✓' : 'Concluir'}
+                        </button>
+                        <button onclick="deleteTask(${t.id})" title="Excluir Tarefa" class="text-xs px-2.5 py-1.5 rounded-xl font-bold text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition">
+                            ✕
+                        </button>
+                    </div>
+                </div>
+            `}).join('');
+        }
+
+        async function addNewTask() {
+            const input = document.getElementById('task-input');
+            const pillarSelect = document.getElementById('task-pillar');
+            const planSelect = document.getElementById('task-plan-link');
+            const prioritySelect = document.getElementById('task-priority');
+            const dueDateInput = document.getElementById('task-due-date');
+            const btn = document.getElementById('btn-sync-task');
+
+            const texto = input.value.trim();
+            const pilar = pillarSelect.value;
+            const planId = planSelect.value ? Number(planSelect.value) : null;
+            const priority = prioritySelect.value || 'MEDIA';
+            const dueDate = dueDateInput.value || '';
+
+            if (!texto) {
+                showToast('Escreva a descrição da tarefa primeiro!', true);
+                return;
+            }
+
+            btn.disabled = true;
+            btn.innerHTML = `<svg class="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> <span>Enviando...</span>`;
+
+            try {
+                const newTask = {
+                    id: Date.now(),
+                    pilar,
+                    planId,
+                    priority,
+                    dueDate,
+                    texto,
+                    concluida: false,
+                    googleTaskId: null
+                };
+
+                if (isTokenValid()) {
+                    newTask.googleTaskId = await pushTaskToGoogle(newTask);
+                }
+
+                state.tasks.unshift(newTask);
+
+                input.value = '';
+                dueDateInput.value = '';
+                saveState();
+                renderTasks();
+                renderPlanos();
+
+                if (isTokenValid()) {
+                    showToast('✅ Tarefa enviada com prazo e prioridade para o Google Tarefas!');
+                } else {
+                    showToast('✅ Tarefa salva localmente! Conecte sua conta Google no topo para sincronizar.');
+                }
+            } catch (err) {
+                showToast('Erro ao enviar para o Google Tarefas. Tente novamente.', true);
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = `<span>+ Criar & Sincronizar</span>`;
+            }
+        }
+
+        async function toggleTask(id) {
+            const task = state.tasks.find(t => t.id === id);
+            if (!task) return;
+
+            task.concluida = !task.concluida;
+            saveState();
+            renderTasks();
+            renderPlanos();
+
+            if (task.googleTaskId && isTokenValid()) {
+                await updateTaskStatusInGoogle(task.googleTaskId, task.concluida);
+            }
+
+            if (task.concluida && task.planId) {
+                showToast('🎯 Progresso do Plano de Ação e Google Tasks atualizados!');
+            } else if (isTokenValid() && task.googleTaskId) {
+                showToast(task.concluida ? '✓ Concluída no planner e no Google Tarefas!' : 'Tarefa reaberta no planner e no Google Tarefas.');
+            }
+        }
+
+        async function deleteTask(id) {
+            const task = state.tasks.find(t => t.id === id);
+            if (!task) return;
+
+            const googleId = task.googleTaskId;
+            state.tasks = state.tasks.filter(t => t.id !== id);
+            saveState();
+            renderTasks();
+            renderPlanos();
+
+            if (googleId && isTokenValid()) {
+                await deleteTaskFromGoogle(googleId);
+                showToast('Tarefa excluída do planner e do Google Tarefas.');
+            } else {
+                showToast('Tarefa removida.');
+            }
+        }
+
+        function renderHabitos() {
+            const container = document.getElementById('habits-table-container');
+            if (!container) return;
+            if (state.habitos.length === 0) {
+                container.innerHTML = `<p class="text-xs text-slate-500 text-center py-6">Nenhum hábito cadastrado ainda.</p>`;
+                return;
+            }
+
+            const daysHeader = Array.from({ length: 14 }, (_, i) => `<th class="py-2 px-1.5 text-center text-[10px] font-bold text-slate-400">D${i + 1}</th>`).join('');
+
+            container.innerHTML = `
+                <table class="w-full text-left text-xs border-collapse">
+                    <thead>
+                        <tr class="border-b border-slate-200">
+                            <th class="py-2.5 pr-4 font-extrabold text-slate-700">Hábito</th>
+                            <th class="py-2.5 px-2 font-extrabold text-slate-700">Pilar</th>
+                            ${daysHeader}
+                            <th class="py-2.5 pl-3 text-right font-extrabold text-slate-700">Ação</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-100">
+                        ${state.habitos.map(h => {
+                            const cells = (h.dias || []).map((done, dIdx) => `
+                                <td class="py-2.5 px-1 text-center">
+                                    <button onclick="toggleHabitDay(${h.id}, ${dIdx})"
+                                        class="w-6 h-6 rounded-lg font-bold text-[11px] transition ${done ? 'bg-emerald-500 text-white shadow-sm' : 'bg-slate-100 hover:bg-slate-200 text-slate-400'}">
+                                        ${done ? '✓' : '·'}
+                                    </button>
+                                </td>
+                            `).join('');
+
+                            return `
+                                <tr>
+                                    <td class="py-3 pr-4 font-bold text-slate-800 whitespace-nowrap">${h.nome}</td>
+                                    <td class="py-3 px-2"><span class="px-2 py-0.5 rounded-md text-[10px] font-extrabold ${PILLAR_COLORS[h.pilar] || 'bg-slate-100'}">[${h.pilar}]</span></td>
+                                    ${cells}
+                                    <td class="py-3 pl-3 text-right">
+                                        <button onclick="deleteHabit(${h.id})" class="text-slate-400 hover:text-rose-600 font-bold text-xs px-2 py-1 rounded-lg hover:bg-rose-50 transition">✕</button>
+                                    </td>
+                                </tr>
+                            `;
+                        }).join('')}
+                    </tbody>
+                </table>
+            `;
+        }
+
+        function addNewHabit() {
+            const pilar = document.getElementById('habit-pillar').value;
+            const nameInput = document.getElementById('habit-name');
+            const nome = nameInput.value.trim();
+
+            if (!nome) {
+                showToast('Digite o nome do hábito!', true);
+                return;
+            }
+
+            state.habitos.push({
+                id: Date.now(),
+                nome,
+                pilar,
+                dias: Array(14).fill(0)
+            });
+
+            nameInput.value = '';
+            saveState();
+            renderHabitos();
+            showToast('✅ Hábito adicionado ao rastreador!');
+        }
+
+        function toggleHabitDay(habitId, dayIdx) {
+            const habit = state.habitos.find(h => h.id === habitId);
+            if (habit) {
+                habit.dias[dayIdx] = habit.dias[dayIdx] ? 0 : 1;
+                saveState();
+                renderHabitos();
+            }
+        }
+
+        function deleteHabit(habitId) {
+            state.habitos = state.habitos.filter(h => h.id !== habitId);
+            saveState();
+            renderHabitos();
+            showToast('Hábito excluído.');
+        }
+
+        function renderAll() {
+            try {
+                renderSliders();
+                renderRadarChart();
+                renderPlanos();
+                populatePlanDropdown();
+                renderTasks();
+                renderHabitos();
+                updateHeaderStats();
+            } catch (err) {
+                console.error("Erro na renderização:", err);
+            }
+        }
+
+        window.addEventListener('DOMContentLoaded', () => {
+            renderAll();
+            setTimeout(initGoogleClient, 500);
+        });
+    </script>
+</body>
+</html>
