@@ -49,7 +49,6 @@
     <!-- Cabeçalho Claro & Lúdico -->
     <header class="bg-white/90 backdrop-blur-md border-b border-slate-200/80 sticky top-0 z-40">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 py-4 flex flex-col lg:flex-row justify-between items-center gap-4">
-            <!-- Logo e Subtítulo -->
             <div class="flex items-center gap-3.5">
                 <div class="w-11 h-11 rounded-2xl bg-gradient-to-br from-[#FF6B00] to-amber-500 flex items-center justify-center shadow-md shadow-orange-500/20 text-white font-extrabold text-lg tracking-tighter">
                     •×
@@ -67,7 +66,6 @@
                 </div>
             </div>
 
-            <!-- Indicadores Superiores + Botões Google -->
             <div class="flex items-center gap-2.5 sm:gap-3.5 flex-wrap justify-center">
                 <div class="bg-slate-50 border border-slate-200/80 rounded-2xl px-4 py-2 flex items-center gap-4 sm:gap-5">
                     <div>
@@ -86,13 +84,11 @@
                     </div>
                 </div>
 
-                <!-- Botão Forçar Sincronização da Nuvem -->
                 <button id="force-sync-btn" onclick="forceCloudPull()" title="Baixar versão mais recente do Google Drive" class="bg-white hover:bg-slate-100 border border-slate-200 text-slate-700 px-3.5 py-2.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-sm">
                     <span id="force-sync-icon">↻</span>
                     <span>Sincronizar Nuvem</span>
                 </button>
 
-                <!-- Botão OAuth 2.0 Google (Tasks + Drive) -->
                 <button id="google-auth-btn" onclick="handleGoogleAuth()" class="bg-slate-900 hover:bg-slate-800 text-white px-4 py-2.5 rounded-xl text-xs font-bold transition flex items-center gap-2 shadow-sm">
                     <svg class="w-4 h-4" viewBox="0 0 24 24"><path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.665-5.17 3.665-9.17z"/><path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.11-6.72-4.96H1.29v3.14C3.26 21.3 7.31 24 12 24z"/><path fill="#FBBC05" d="M5.28 14.24c-.24-.72-.38-1.49-.38-2.24s.14-1.52.38-2.24V6.62H1.29C.47 8.24 0 10.06 0 12s.47 3.76 1.29 5.38l3.99-3.14z"/><path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.31 0 3.26 2.7 1.29 6.62l3.99 3.14c.95-2.85 3.6-4.96 6.72-4.96z"/></svg>
                     <span id="auth-status-text">Conectar Google</span>
@@ -126,4 +122,72 @@
                         <h2 class="text-base font-extrabold text-slate-800">Ciclo Semestral (10 Pilares)</h2>
                         <span class="text-[11px] font-bold bg-purple-100 text-purple-700 px-2.5 py-0.5 rounded-full">6 Meses</span>
                     </div>
-                    <p class
+                    <p class="text-xs text-slate-500 mb-5">Calibre sua nota atual de 0 a 10 e compare com o estado ideal de cada área.</p>
+                    <div id="sliders-container" class="space-y-3.5 max-h-[520px] overflow-y-auto pr-2"></div>
+                </div>
+
+                <div class="lg:col-span-7 glass-card p-6 rounded-3xl flex flex-col items-center justify-center">
+                    <h2 class="text-base font-extrabold text-slate-800 mb-1">Mapa Visual de Equilíbrio</h2>
+                    <p class="text-xs text-slate-500 mb-4">Nota Atual (Laranja) vs. Meta do Semestre (Azul)</p>
+                    <div class="w-full max-w-[460px] aspect-square">
+                        <canvas id="radarChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ABA 2: PLANOS DE AÇÃO -->
+        <section id="tab-planos" class="tab-content mt-6 hidden">
+            <div class="glass-card p-6 rounded-3xl mb-6">
+                <h2 class="text-base font-extrabold text-slate-800 mb-1">Criar Novo Plano de Ação</h2>
+                <p class="text-xs text-slate-500 mb-4">Defina metas de 6 meses com prazo limite. Vincule tarefas a estes planos para preencher o progresso automaticamente.</p>
+                
+                <div class="grid grid-cols-1 sm:grid-cols-12 gap-3">
+                    <select id="plan-pillar" class="sm:col-span-2 bg-white border border-slate-200 rounded-xl px-3 py-2.5 text-xs font-semibold text-slate-700 focus:outline-none focus:border-[#FF6B00]">
+                        <option value="CAR">[CAR] Carreira</option>
+                        <option value="FIN">[FIN] Finanças</option>
+                        <option value="SAU">[SAU] Saúde</option>
+                        <option value="MEN">[MEN] Mental</option>
+                        <option value="INT">[INT] Intelectual</option>
+                        <option value="REL">[REL] Relacion.</option>
+                        <option value="FAM">[FAM] Família</option>
+                        <option value="SOC">[SOC] Social</option>
+                        <option value="LAZ">[LAZ] Lazer</option>
+                        <option value="ESP">[ESP] Espirit.</option>
+                    </select>
+                    <input type="text" id="plan-title" placeholder="Ex: Concluir entrega final do TCC na UERJ" class="sm:col-span-5 bg-white border border-slate-200 rounded-xl px-4 py-2.5 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-[#FF6B00]">
+                    <div class="sm:col-span-3">
+                        <input type="date" id="plan-deadline" title="Prazo final do Plano de Ação" class="w-full bg-white border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs font-semibold text-slate-700 focus:outline-none focus:border-[#FF6B00]">
+                    </div>
+                    <button onclick="addNewPlan()" class="sm:col-span-2 bg-[#FF6B00] hover:bg-orange-600 text-white px-4 py-2.5 rounded-xl text-xs font-bold shadow-md shadow-orange-500/20 transition">
+                        + Adicionar
+                    </button>
+                </div>
+            </div>
+
+            <div id="planos-grid" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
+        </section>
+
+        <!-- ABA 3: DIÁRIO & GOOGLE TAREFAS -->
+        <section id="tab-bujo" class="tab-content mt-6 hidden">
+            <div class="glass-card p-6 rounded-3xl mb-6">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4">
+                    <div>
+                        <h2 class="text-base font-extrabold text-slate-800">Registro Rápido & Google Tarefas</h2>
+                        <p class="text-xs text-slate-500">Prazo, prioridade e conclusão/exclusão sincronizados diretamente com o Google Tarefas.</p>
+                    </div>
+                    <button id="btn-pull-tasks" onclick="pullFromGoogleTasks()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-xl text-xs font-bold transition self-start sm:self-auto">
+                        ↻ Sincronizar Google Tasks
+                    </button>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-12 gap-3 mb-3">
+                    <select id="task-pillar" class="sm:col-span-3 bg-white border border-slate-200 rounded-xl px-3 py-2.5 text-xs font-semibold text-slate-700 focus:outline-none focus:border-[#FF6B00]">
+                        <option value="CAR">[CAR] Carreira</option>
+                        <option value="FIN">[FIN] Finanças</option>
+                        <option value="SAU">[SAU] Saúde</option>
+                        <option value="MEN">[MEN] Mental</option>
+                        <option value="INT">[INT] Intelectual</option>
+                        <option value="REL">[REL] Relacion.</option>
+                        <option value="FAM">[FAM] Família</option>
+                        <option value
