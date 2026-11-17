@@ -36,6 +36,21 @@
             transform: translateY(0);
             opacity: 1;
         }
+        .excel-table th, .excel-table td {
+            border: 1px solid #E2E8F0;
+        }
+        .excel-input {
+            width: 100%;
+            background: transparent;
+            padding: 6px 8px;
+            font-size: 12px;
+            outline: none;
+            transition: background 0.15s;
+        }
+        .excel-input:focus {
+            background: #FFF7ED;
+            box-shadow: inset 0 0 0 1.5px #FF6B00;
+        }
     </style>
 </head>
 <body class="min-h-screen pb-16">
@@ -233,7 +248,42 @@
                 </div>
             </div>
 
-            <div class="space-y-3" id="tasks-list"></div>
+            <!-- Barra de Controle: Ordenação por Data/Prioridade e Alternador Cards vs Tabela Excel -->
+            <div class="glass-card px-5 py-3.5 rounded-2xl mb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div class="flex items-center gap-3 flex-wrap">
+                    <span class="text-xs font-extrabold text-slate-700">Ordenar por:</span>
+                    <select id="task-sort-mode" onchange="changeTaskSort(this.value)" class="bg-white border border-slate-200 rounded-xl px-3 py-1.5 text-xs font-semibold text-slate-700 focus:outline-none focus:border-[#FF6B00]">
+                        <option value="date_asc">📅 Data de Prazo (Mais próximas primeiro)</option>
+                        <option value="date_desc">📅 Data de Prazo (Mais distantes primeiro)</option>
+                        <option value="priority">🔴 Prioridade (Alta → Baixa)</option>
+                    </select>
+                </div>
+
+                <div class="flex items-center gap-1.5 bg-slate-100 p-1 rounded-xl self-start sm:self-auto">
+                    <button id="view-btn-cards" onclick="setTaskViewMode('cards')" class="px-3 py-1.5 rounded-lg text-xs font-bold transition bg-white text-slate-800 shadow-sm">
+                        🗂️ Cards
+                    </button>
+                    <button id="view-btn-table" onclick="setTaskViewMode('table')" class="px-3 py-1.5 rounded-lg text-xs font-bold transition text-slate-600 hover:text-slate-900">
+                        📊 Tabela (Excel)
+                    </button>
+                </div>
+            </div>
+
+            <!-- Lista de Tarefas Pendentes (Cards ou Tabela Excel) -->
+            <div id="tasks-active-container" class="space-y-3"></div>
+
+            <!-- Seção Recolhível de Tarefas Concluídas -->
+            <div id="completed-tasks-wrapper" class="mt-6 hidden">
+                <button onclick="toggleCompletedSection()" class="w-full glass-card px-5 py-3.5 rounded-2xl flex items-center justify-between text-left hover:bg-white/95 transition">
+                    <div class="flex items-center gap-2.5">
+                        <span id="completed-chevron" class="text-xs font-extrabold text-slate-500 transition-transform duration-200">▶</span>
+                        <span class="text-xs font-extrabold text-slate-700">Tarefas Concluídas</span>
+                        <span id="completed-count-badge" class="text-[11px] bg-emerald-100 text-emerald-700 px-2.5 py-0.5 rounded-full font-extrabold">0</span>
+                    </div>
+                    <span id="completed-toggle-label" class="text-[11px] font-bold text-slate-400">Clique para expandir</span>
+                </button>
+                <div id="tasks-completed-container" class="hidden mt-3 space-y-2.5 pl-2 border-l-2 border-emerald-200"></div>
+            </div>
         </section>
 
         <!-- ABA 4: RASTREADOR DE HÁBITOS -->
@@ -282,6 +332,11 @@
         let tokenExpiresAt = 0;
         let driveFileId = null;
         let saveTimeout = null;
+
+        // Controles de visualização da aba de tarefas
+        let taskSortMode = 'date_asc';
+        let taskViewMode = 'cards';
+        let showCompletedTasks = false;
 
         const PILLAR_COLORS = {
             CAR: 'bg-blue-100 text-blue-700',
@@ -356,6 +411,11 @@
         } catch (e) {
             localStorage.removeItem('lifeos_v3_state');
             state = normalizeState(null);
+        }
+
+        function escapeHtml(str) {
+            if (!str) return '';
+            return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
         }
 
         function formatDateBR(isoDate) {
@@ -486,7 +546,10 @@
                 btnEl.className = "tab-btn px-5 py-2.5 rounded-xl text-xs font-bold transition whitespace-nowrap bg-[#FF6B00] text-white shadow-md shadow-orange-500/20";
             }
 
-            if (tabId === 'bujo') populatePlanDropdown();
+            if (tabId === 'bujo') {
+                populatePlanDropdown();
+                renderTasks();
+            }
             if (tabId === 'planos') renderPlanos();
         }
 
@@ -667,6 +730,29 @@
                 if (!isCompleted) payload.completed = null;
 
                 const res = await fetch(`https://tasks.googleapis.com/tasks/v1/lists/@default/tasks/${googleTaskId}`, {
+                    method: 'PATCH',
+                    headers: {
+                        'Authorization': `Bearer ${accessToken}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(payload)
+                });
+                if (res.status === 401) handleExpiredToken();
+            } catch (err) {
+                console.error(err);
+            }
+        }
+
+        async function updateTaskDetailsInGoogle(taskObj) {
+            if (!isTokenValid() || !taskObj.googleTaskId) return;
+            try {
+                const payload = {
+                    title: `[${taskObj.pilar}] ${taskObj.texto}`
+                };
+                if (taskObj.dueDate) {
+                    payload.due = toGoogleTasksRFC3339(taskObj.dueDate);
+                }
+                const res = await fetch(`https://tasks.googleapis.com/tasks/v1/lists/@default/tasks/${taskObj.googleTaskId}`, {
                     method: 'PATCH',
                     headers: {
                         'Authorization': `Bearer ${accessToken}`,
@@ -966,56 +1052,306 @@
             const select = document.getElementById('task-plan-link');
             if (!select) return;
             select.innerHTML = `<option value="">Sem plano vinculado</option>` +
-                state.planos.map(pl => `<option value="${pl.id}">[${pl.pilar}] ${pl.titulo}${pl.deadline ? ` (até ${formatDateBR(pl.deadline)})` : ''}</option>`).join('');
+                state.planos.map(pl => `<option value="${pl.id}">[${pl.pilar}] ${escapeHtml(pl.titulo)}${pl.deadline ? ` (até ${formatDateBR(pl.deadline)})` : ''}</option>`).join('');
+        }
+
+        // --- CONTROLES DE ORDENAÇÃO, VISUALIZAÇÃO E SEÇÃO RECOLHÍVEL ---
+        function changeTaskSort(mode) {
+            taskSortMode = mode;
+            renderTasks();
+        }
+
+        function setTaskViewMode(mode) {
+            taskViewMode = mode;
+            const btnCards = document.getElementById('view-btn-cards');
+            const btnTable = document.getElementById('view-btn-table');
+            if (btnCards && btnTable) {
+                if (mode === 'cards') {
+                    btnCards.className = "px-3 py-1.5 rounded-lg text-xs font-bold transition bg-white text-slate-800 shadow-sm";
+                    btnTable.className = "px-3 py-1.5 rounded-lg text-xs font-bold transition text-slate-600 hover:text-slate-900";
+                } else {
+                    btnTable.className = "px-3 py-1.5 rounded-lg text-xs font-bold transition bg-white text-slate-800 shadow-sm";
+                    btnCards.className = "px-3 py-1.5 rounded-lg text-xs font-bold transition text-slate-600 hover:text-slate-900";
+                }
+            }
+            renderTasks();
+        }
+
+        function toggleCompletedSection() {
+            showCompletedTasks = !showCompletedTasks;
+            const container = document.getElementById('tasks-completed-container');
+            const chevron = document.getElementById('completed-chevron');
+            const label = document.getElementById('completed-toggle-label');
+            if (!container) return;
+
+            if (showCompletedTasks) {
+                container.classList.remove('hidden');
+                if (chevron) chevron.textContent = '▼';
+                if (label) label.textContent = 'Clique para recolher';
+            } else {
+                container.classList.add('hidden');
+                if (chevron) chevron.textContent = '▶';
+                if (label) label.textContent = 'Clique para expandir';
+            }
+        }
+
+        function sortTasksList(list) {
+            const prioRank = { ALTA: 1, MEDIA: 2, BAIXA: 3 };
+            return [...list].sort((a, b) => {
+                if (taskSortMode === 'date_asc') {
+                    const da = a.dueDate && a.dueDate.trim() !== '' ? a.dueDate : '9999-12-31';
+                    const db = b.dueDate && b.dueDate.trim() !== '' ? b.dueDate : '9999-12-31';
+                    if (da !== db) return da.localeCompare(db);
+                    return (prioRank[a.priority] || 2) - (prioRank[b.priority] || 2);
+                } else if (taskSortMode === 'date_desc') {
+                    const da = a.dueDate && a.dueDate.trim() !== '' ? a.dueDate : '0000-01-01';
+                    const db = b.dueDate && b.dueDate.trim() !== '' ? b.dueDate : '0000-01-01';
+                    if (da !== db) return db.localeCompare(da);
+                    return (prioRank[a.priority] || 2) - (prioRank[b.priority] || 2);
+                } else {
+                    const pa = prioRank[a.priority] || 2;
+                    const pb = prioRank[b.priority] || 2;
+                    if (pa !== pb) return pa - pb;
+                    const da = a.dueDate && a.dueDate.trim() !== '' ? a.dueDate : '9999-12-31';
+                    const db = b.dueDate && b.dueDate.trim() !== '' ? b.dueDate : '9999-12-31';
+                    return da.localeCompare(db);
+                }
+            });
+        }
+
+        function renderTaskCardHTML(t) {
+            const linkedPlan = state.planos.find(p => Number(p.id) === Number(t.planId));
+            const prio = PRIORITY_STYLES[t.priority] || PRIORITY_STYLES.MEDIA;
+            const overdue = t.dueDate && !t.concluida && isDateOverdue(t.dueDate);
+
+            return `
+            <div class="glass-card p-4 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 ${t.concluida ? 'opacity-75 bg-white/60' : ''}">
+                <div class="flex items-start sm:items-center gap-2.5 flex-wrap">
+                    <span class="text-[#FF6B00] font-extrabold text-sm">${t.concluida ? '×' : '•'}</span>
+                    <span class="text-[11px] px-2.5 py-0.5 rounded-lg font-extrabold ${PILLAR_COLORS[t.pilar] || 'bg-slate-100 text-slate-700'}">[${t.pilar}]</span>
+                    <span class="text-[10px] px-2 py-0.5 rounded-full font-bold ${prio.badge}">${prio.dot} ${prio.label}</span>
+                    ${t.isRecurring ? `<span class="text-[10px] bg-orange-100 text-[#FF6B00] px-2 py-0.5 rounded-full font-bold">🔄 Recorrente (${t.frequency})</span>` : ''}
+                    <span class="text-xs font-semibold ${t.concluida ? 'line-through text-slate-400' : 'text-slate-800'}">${escapeHtml(t.texto)}</span>
+                    ${t.dueDate ? `
+                        <span class="text-[10px] px-2.5 py-0.5 rounded-full font-bold ${overdue ? 'bg-rose-100 text-rose-700' : 'bg-sky-100 text-sky-700'}">
+                            📅 ${formatDateBR(t.dueDate)}${overdue ? ' (Vencido)' : ''}
+                        </span>
+                    ` : ''}
+                    ${linkedPlan ? `<span class="text-[10px] bg-purple-100 text-purple-700 px-2.5 py-0.5 rounded-full font-bold">🎯 ${escapeHtml(linkedPlan.titulo)}</span>` : ''}
+                </div>
+                <div class="flex items-center gap-2 self-end sm:self-auto">
+                    <button onclick="toggleTask(${t.id})" class="text-xs px-3.5 py-1.5 rounded-xl font-bold transition ${t.concluida ? 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200' : 'bg-slate-100 hover:bg-slate-200 text-slate-700'}">
+                        ${t.concluida ? 'Reabrir ↺' : 'Concluir ✓'}
+                    </button>
+                    <button onclick="editTask(${t.id})" title="Editar Tarefa" class="text-xs px-2.5 py-1.5 rounded-xl font-bold text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 transition">
+                        ✏️
+                    </button>
+                    <button onclick="deleteTask(${t.id})" title="Excluir Tarefa" class="text-xs px-2.5 py-1.5 rounded-xl font-bold text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition">
+                        ✕
+                    </button>
+                </div>
+            </div>`;
+        }
+
+        function renderExcelTableHTML(activeTasks) {
+            const pillarOptions = state.pilares.map(p => `<option value="${p.id}">[${p.id}] ${p.nome}</option>`).join('');
+            const planOptions = `<option value="">Sem plano</option>` + state.planos.map(pl => `<option value="${pl.id}">[${pl.pilar}] ${escapeHtml(pl.titulo)}</option>`).join('');
+
+            const rowsHTML = activeTasks.map(t => {
+                const pOpts = state.pilares.map(p => `<option value="${p.id}" ${t.pilar === p.id ? 'selected' : ''}>[${p.id}]</option>`).join('');
+                const plOpts = `<option value="">—</option>` + state.planos.map(pl => `<option value="${pl.id}" ${Number(t.planId) === Number(pl.id) ? 'selected' : ''}>[${pl.pilar}] ${escapeHtml(pl.titulo)}</option>`).join('');
+                const overdue = t.dueDate && isDateOverdue(t.dueDate);
+
+                return `
+                <tr class="bg-white hover:bg-slate-50/80 transition">
+                    <td class="text-center px-2 py-1">
+                        <input type="checkbox" onchange="toggleTask(${t.id})" class="w-4 h-4 accent-emerald-600 cursor-pointer rounded" title="Marcar como concluída">
+                    </td>
+                    <td class="p-0 min-w-[220px]">
+                        <input type="text" value="${escapeHtml(t.texto)}" onchange="inlineUpdateTask(${t.id}, 'texto', this.value)" class="excel-input font-semibold text-slate-800">
+                    </td>
+                    <td class="p-0 w-24">
+                        <select onchange="inlineUpdateTask(${t.id}, 'pilar', this.value)" class="excel-input font-bold text-slate-700 cursor-pointer">
+                            ${pOpts}
+                        </select>
+                    </td>
+                    <td class="p-0 w-28">
+                        <select onchange="inlineUpdateTask(${t.id}, 'priority', this.value)" class="excel-input font-bold cursor-pointer">
+                            <option value="ALTA" ${t.priority === 'ALTA' ? 'selected' : ''}>🔴 Alta</option>
+                            <option value="MEDIA" ${t.priority === 'MEDIA' ? 'selected' : ''}>🟡 Média</option>
+                            <option value="BAIXA" ${t.priority === 'BAIXA' ? 'selected' : ''}>🟢 Baixa</option>
+                        </select>
+                    </td>
+                    <td class="p-0 w-36">
+                        <input type="date" value="${t.dueDate || ''}" onchange="inlineUpdateTask(${t.id}, 'dueDate', this.value)" class="excel-input font-semibold ${overdue ? 'text-rose-600 font-bold' : 'text-slate-700'}">
+                    </td>
+                    <td class="p-0 min-w-[160px]">
+                        <select onchange="inlineUpdateTask(${t.id}, 'planId', this.value)" class="excel-input text-slate-600 cursor-pointer">
+                            ${plOpts}
+                        </select>
+                    </td>
+                    <td class="text-center px-2 py-1 w-12">
+                        <button onclick="deleteTask(${t.id})" title="Excluir linha" class="text-slate-400 hover:text-rose-600 font-bold text-xs px-1.5 py-0.5 rounded hover:bg-rose-50">✕</button>
+                    </td>
+                </tr>`;
+            }).join('');
+
+            return `
+            <div class="glass-card rounded-2xl overflow-x-auto shadow-sm">
+                <table class="w-full text-left border-collapse excel-table text-xs">
+                    <thead>
+                        <tr class="bg-slate-100/90 text-slate-700 font-extrabold text-[11px] uppercase tracking-wider">
+                            <th class="py-2.5 px-2 text-center w-10">✓</th>
+                            <th class="py-2.5 px-3">Tarefa / Descrição (Edição Direta)</th>
+                            <th class="py-2.5 px-2">Pilar</th>
+                            <th class="py-2.5 px-2">Prioridade</th>
+                            <th class="py-2.5 px-2">Prazo</th>
+                            <th class="py-2.5 px-2">Plano Vinculado</th>
+                            <th class="py-2.5 px-2 text-center">Del</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Linha Fixa de Cadastro Rápido estilo Planilha -->
+                        <tr class="bg-orange-50/60">
+                            <td class="text-center px-2 py-1 font-extrabold text-[#FF6B00] text-sm">+</td>
+                            <td class="p-0">
+                                <input type="text" id="quick-row-texto" onkeydown="if(event.key==='Enter') addQuickRowTask()" placeholder="Digite nova tarefa e aperte Enter..." class="excel-input font-semibold text-slate-900 placeholder-slate-400">
+                            </td>
+                            <td class="p-0">
+                                <select id="quick-row-pilar" class="excel-input font-bold text-slate-700">
+                                    ${pillarOptions}
+                                </select>
+                            </td>
+                            <td class="p-0">
+                                <select id="quick-row-prio" class="excel-input font-bold text-slate-700">
+                                    <option value="ALTA">🔴 Alta</option>
+                                    <option value="MEDIA" selected>🟡 Média</option>
+                                    <option value="BAIXA">🟢 Baixa</option>
+                                </select>
+                            </td>
+                            <td class="p-0">
+                                <input type="date" id="quick-row-date" class="excel-input font-semibold text-slate-700">
+                            </td>
+                            <td class="p-0">
+                                <select id="quick-row-plan" class="excel-input text-slate-600">
+                                    ${planOptions}
+                                </select>
+                            </td>
+                            <td class="text-center px-1.5 py-1">
+                                <button onclick="addQuickRowTask()" title="Adicionar linha" class="bg-[#FF6B00] hover:bg-orange-600 text-white font-bold text-[11px] px-2.5 py-1 rounded-lg shadow-sm transition">Salvar</button>
+                            </td>
+                        </tr>
+                        ${rowsHTML || `<tr><td colspan="7" class="text-center py-6 text-slate-400 italic">Nenhuma tarefa pendente. Use a linha acima para cadastrar rapidamente!</td></tr>`}
+                    </tbody>
+                </table>
+            </div>`;
         }
 
         function renderTasks() {
-            const container = document.getElementById('tasks-list');
-            if (!container) return;
-            if (state.tasks.length === 0) {
-                container.innerHTML = `<div class="glass-card p-8 rounded-3xl text-center text-xs text-slate-500">Nenhuma tarefa registrada no Bullet Journal.</div>`;
+            const activeContainer = document.getElementById('tasks-active-container');
+            const completedWrapper = document.getElementById('completed-tasks-wrapper');
+            const completedContainer = document.getElementById('tasks-completed-container');
+            const completedBadge = document.getElementById('completed-count-badge');
+
+            if (!activeContainer) return;
+
+            const pendingTasks = sortTasksList(state.tasks.filter(t => !t.concluida));
+            const completedTasks = sortTasksList(state.tasks.filter(t => t.concluida));
+
+            // Renderiza tarefas ativas conforme modo selecionado (Cards vs Tabela Excel)
+            if (taskViewMode === 'table') {
+                activeContainer.innerHTML = renderExcelTableHTML(pendingTasks);
+            } else {
+                if (pendingTasks.length === 0) {
+                    activeContainer.innerHTML = `<div class="glass-card p-8 rounded-3xl text-center text-xs text-slate-500">Nenhuma tarefa pendente no momento! 🎉</div>`;
+                } else {
+                    activeContainer.innerHTML = pendingTasks.map(t => renderTaskCardHTML(t)).join('');
+                }
+            }
+
+            // Renderiza seção recolhível de tarefas concluídas
+            if (completedWrapper && completedContainer && completedBadge) {
+                if (completedTasks.length === 0) {
+                    completedWrapper.classList.add('hidden');
+                } else {
+                    completedWrapper.classList.remove('hidden');
+                    completedBadge.textContent = completedTasks.length;
+                    completedContainer.innerHTML = completedTasks.map(t => renderTaskCardHTML(t)).join('');
+                }
+            }
+        }
+
+        async function inlineUpdateTask(id, field, value) {
+            const task = state.tasks.find(t => Number(t.id) === Number(id));
+            if (!task) return;
+
+            if (field === 'planId') {
+                task.planId = value ? Number(value) : null;
+            } else if (field === 'texto') {
+                if (!value.trim()) {
+                    renderTasks();
+                    return;
+                }
+                task.texto = value.trim();
+            } else {
+                task[field] = value;
+            }
+
+            saveState();
+            renderTasks();
+            renderPlanos();
+
+            if (task.googleTaskId && isTokenValid() && (field === 'texto' || field === 'pilar' || field === 'dueDate')) {
+                await updateTaskDetailsInGoogle(task);
+            }
+            showToast('✅ Planilha atualizada!');
+        }
+
+        async function addQuickRowTask() {
+            const textoInput = document.getElementById('quick-row-texto');
+            const pilarSelect = document.getElementById('quick-row-pilar');
+            const prioSelect = document.getElementById('quick-row-prio');
+            const dateInput = document.getElementById('quick-row-date');
+            const planSelect = document.getElementById('quick-row-plan');
+
+            if (!textoInput) return;
+            const texto = textoInput.value.trim();
+            if (!texto) {
+                showToast('Digite a descrição da tarefa na linha da planilha!', true);
                 return;
             }
 
-            const prioRank = { ALTA: 1, MEDIA: 2, BAIXA: 3 };
-            const sortedTasks = [...state.tasks].sort((a, b) => {
-                if (a.concluida !== b.concluida) return a.concluida ? 1 : -1;
-                return (prioRank[a.priority] || 2) - (prioRank[b.priority] || 2);
-            });
+            const newTask = {
+                id: Date.now(),
+                pilar: pilarSelect ? pilarSelect.value : 'CAR',
+                planId: planSelect && planSelect.value ? Number(planSelect.value) : null,
+                priority: prioSelect ? prioSelect.value : 'MEDIA',
+                dueDate: dateInput ? dateInput.value : '',
+                texto,
+                concluida: false,
+                googleTaskId: null,
+                isRecurring: false,
+                frequency: 'none',
+                recurrenceEndDate: ''
+            };
 
-            container.innerHTML = sortedTasks.map(t => {
-                const linkedPlan = state.planos.find(p => Number(p.id) === Number(t.planId));
-                const prio = PRIORITY_STYLES[t.priority] || PRIORITY_STYLES.MEDIA;
-                const overdue = t.dueDate && !t.concluida && isDateOverdue(t.dueDate);
+            state.tasks.unshift(newTask);
+            saveState();
+            renderTasks();
+            renderPlanos();
 
-                return `
-                <div class="glass-card p-4 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                    <div class="flex items-start sm:items-center gap-2.5 flex-wrap">
-                        <span class="text-[#FF6B00] font-extrabold text-sm">${t.concluida ? '×' : '•'}</span>
-                        <span class="text-[11px] px-2.5 py-0.5 rounded-lg font-extrabold ${PILLAR_COLORS[t.pilar] || 'bg-slate-100 text-slate-700'}">[${t.pilar}]</span>
-                        <span class="text-[10px] px-2 py-0.5 rounded-full font-bold ${prio.badge}">${prio.dot} ${prio.label}</span>
-                        ${t.isRecurring ? `<span class="text-[10px] bg-orange-100 text-[#FF6B00] px-2 py-0.5 rounded-full font-bold">🔄 Recorrente (${t.frequency})</span>` : ''}
-                        <span class="text-xs font-semibold ${t.concluida ? 'line-through text-slate-400' : 'text-slate-800'}">${t.texto}</span>
-                        ${t.dueDate ? `
-                            <span class="text-[10px] px-2.5 py-0.5 rounded-full font-bold ${overdue ? 'bg-rose-100 text-rose-700' : 'bg-sky-100 text-sky-700'}">
-                                📅 ${formatDateBR(t.dueDate)}
-                            </span>
-                        ` : ''}
-                        ${linkedPlan ? `<span class="text-[10px] bg-purple-100 text-purple-700 px-2.5 py-0.5 rounded-full font-bold">🎯 ${linkedPlan.titulo}</span>` : ''}
-                    </div>
-                    <div class="flex items-center gap-2 self-end sm:self-auto">
-                        <button onclick="toggleTask(${t.id})" class="text-xs px-3.5 py-1.5 rounded-xl font-bold transition ${t.concluida ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 hover:bg-slate-200 text-slate-700'}">
-                            ${t.concluida ? 'Concluída ✓' : 'Concluir'}
-                        </button>
-                        <button onclick="editTask(${t.id})" title="Editar Tarefa" class="text-xs px-2.5 py-1.5 rounded-xl font-bold text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 transition">
-                            ✏️ Editar
-                        </button>
-                        <button onclick="deleteTask(${t.id})" title="Excluir Tarefa" class="text-xs px-2.5 py-1.5 rounded-xl font-bold text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition">
-                            ✕
-                        </button>
-                    </div>
-                </div>
-            `}).join('');
+            if (isTokenValid()) {
+                pushTaskToGoogle(newTask).then(gId => {
+                    newTask.googleTaskId = gId;
+                    saveState();
+                }).catch(() => {});
+            }
+
+            showToast('✅ Tarefa adicionada via planilha!');
+            setTimeout(() => {
+                const nextInput = document.getElementById('quick-row-texto');
+                if (nextInput) nextInput.focus();
+            }, 50);
         }
 
         async function addNewTask() {
@@ -1106,6 +1442,9 @@
                 saveState();
                 renderTasks();
                 renderPlanos();
+                if (task.googleTaskId && isTokenValid()) {
+                    updateTaskDetailsInGoogle(task);
+                }
                 showToast('✅ Tarefa atualizada!');
             }
         }
@@ -1162,7 +1501,9 @@
             }
 
             if (task.concluida && task.planId) {
-                showToast('🎯 Progresso do Plano de Ação e Google Tasks atualizados!');
+                showToast('🎯 Tarefa movida para Concluídas e progresso atualizado!');
+            } else if (task.concluida) {
+                showToast('✓ Tarefa movida para a gaveta de Concluídas!');
             }
         }
 
@@ -1217,7 +1558,7 @@
 
                             return `
                                 <tr>
-                                    <td class="py-3 pr-4 font-bold text-slate-800 whitespace-nowrap">${h.nome}</td>
+                                    <td class="py-3 pr-4 font-bold text-slate-800 whitespace-nowrap">${escapeHtml(h.nome)}</td>
                                     <td class="py-3 px-2"><span class="px-2 py-0.5 rounded-md text-[10px] font-extrabold ${PILLAR_COLORS[h.pilar] || 'bg-slate-100'}">[${h.pilar}]</span></td>
                                     ${cells}
                                     <td class="py-3 pl-3 text-right">
