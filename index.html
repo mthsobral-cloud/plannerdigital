@@ -256,7 +256,7 @@
         <!-- ABA 3: DIÁRIO & GOOGLE TAREFAS -->
         <section id="tab-bujo" class="tab-content mt-6 hidden">
 
-            <!-- CAIXA DE ENTRADA (LIFE OS INBOX — GOOGLE TASKS) -->
+            <!-- CAIXA DE ENTRADA (LIFE OS INBOX — LISTA UNIFICADA NO GOOGLE TASKS) -->
             <div class="glass-card p-5 rounded-3xl mb-6 border-orange-200/80 bg-gradient-to-r from-orange-50/70 via-white/90 to-amber-50/50">
                 <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                     <div class="flex items-center gap-3">
@@ -266,9 +266,9 @@
                         <div>
                             <div class="flex items-center gap-2 flex-wrap">
                                 <h2 class="text-sm font-extrabold text-slate-800">Caixa de Entrada (Life OS Inbox)</h2>
-                                <span id="inbox-count-badge" class="text-[11px] bg-orange-100 text-[#FF6B00] px-2.5 py-0.5 rounded-full font-extrabold">0 pendente(s)</span>
+                                <span id="inbox-count-badge" class="text-[11px] bg-orange-100 text-[#FF6B00] px-2.5 py-0.5 rounded-full font-extrabold">0 para triar</span>
                             </div>
-                            <p class="text-[11px] text-slate-500">Capture tarefas rápidas na lista <strong>Life OS Inbox</strong> do Google Tasks e faça a triagem aqui.</p>
+                            <p class="text-[11px] text-slate-500">Todas as tarefas sincronizam unificadas na lista <strong>Life OS Inbox</strong>. Novas capturas feitas fora do app aparecem aqui para triagem.</p>
                         </div>
                     </div>
                     <div class="flex items-center gap-2 self-start sm:self-auto">
@@ -283,7 +283,7 @@
 
                 <div id="inbox-list-container" class="mt-4 space-y-2.5">
                     <p class="text-xs text-slate-500 italic bg-white/70 rounded-2xl p-3.5 border border-slate-200/60">
-                        Conecte sua conta Google e clique em <strong>↻ Buscar Inbox</strong> para carregar suas capturas da lista <strong>Life OS Inbox</strong>.
+                        Conecte sua conta Google e clique em <strong>↻ Buscar Inbox</strong> para carregar novas capturas da lista <strong>Life OS Inbox</strong>.
                     </p>
                 </div>
             </div>
@@ -293,7 +293,7 @@
                 <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4">
                     <div>
                         <h2 class="text-base font-extrabold text-slate-800">Registro Rápido & Google Tarefas</h2>
-                        <p class="text-xs text-slate-500">Prazo, prioridade, recorrência e conclusão sincronizados com o Google Tasks.</p>
+                        <p class="text-xs text-slate-500">Prazo, prioridade, recorrência e conclusão sincronizados na lista <strong>Life OS Inbox</strong>.</p>
                     </div>
                     <button id="btn-pull-tasks" onclick="pullFromGoogleTasks()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-xl text-xs font-bold transition self-start sm:self-auto">
                         ↻ Sincronizar Google Tasks
@@ -445,7 +445,7 @@
         let driveFileId = null;
         let saveTimeout = null;
 
-        // Estado da Caixa de Entrada (Google Tasks: Life OS Inbox)
+        // Lista unificada no Google Tasks (Life OS Inbox)
         let inboxListId = null;
         let inboxItems = [];
         let inboxPanelExpanded = true;
@@ -501,7 +501,16 @@
                 updatedAt: Number(raw.updatedAt) || 0,
                 pilares: Array.isArray(raw.pilares) && raw.pilares.length ? raw.pilares.map((p, i) => ({ meta: 9, ...defaultPilares[i], ...p })) : defaultPilares,
                 planos: Array.isArray(raw.planos) ? raw.planos.map(p => ({ deadline: '', ...p })) : [],
-                tasks: Array.isArray(raw.tasks) ? raw.tasks.map(t => ({ priority: 'MEDIA', dueDate: '', googleTaskId: null, isRecurring: false, frequency: 'none', recurrenceEndDate: '', ...t })) : [],
+                tasks: Array.isArray(raw.tasks) ? raw.tasks.map(t => ({
+                    priority: 'MEDIA',
+                    dueDate: '',
+                    googleTaskId: null,
+                    googleListId: null,
+                    isRecurring: false,
+                    frequency: 'none',
+                    recurrenceEndDate: '',
+                    ...t
+                })) : [],
                 habitos: Array.isArray(raw.habitos) ? raw.habitos.map(h => ({ dias: Array(14).fill(0), ...h })) : []
             };
         }
@@ -517,9 +526,9 @@
                     { id: 102, pilar: 'CAR', titulo: 'Estruturar pipeline de novas oportunidades B2B', deadline: '' }
                 ],
                 tasks: [
-                    { id: 1, pilar: 'INT', planId: 101, priority: 'ALTA', dueDate: '2026-11-25', texto: 'Revisar referencial teórico sobre dependência de recursos', concluida: true, googleTaskId: null, isRecurring: false },
-                    { id: 2, pilar: 'INT', planId: 101, priority: 'MEDIA', dueDate: '2026-12-02', texto: 'Consolidar metodologia e cronograma de entrega', concluida: false, googleTaskId: null, isRecurring: false },
-                    { id: 3, pilar: 'FIN', planId: null, priority: 'BAIXA', dueDate: '', texto: 'Atualizar planilha de controle mensal', concluida: false, googleTaskId: null, isRecurring: false }
+                    { id: 1, pilar: 'INT', planId: 101, priority: 'ALTA', dueDate: '2026-11-25', texto: 'Revisar referencial teórico sobre dependência de recursos', concluida: true, googleTaskId: null, googleListId: null, isRecurring: false },
+                    { id: 2, pilar: 'INT', planId: 101, priority: 'MEDIA', dueDate: '2026-12-02', texto: 'Consolidar metodologia e cronograma de entrega', concluida: false, googleTaskId: null, googleListId: null, isRecurring: false },
+                    { id: 3, pilar: 'FIN', planId: null, priority: 'BAIXA', dueDate: '', texto: 'Atualizar planilha de controle mensal', concluida: false, googleTaskId: null, googleListId: null, isRecurring: false }
                 ],
                 habitos: [
                     { id: 1, nome: 'Estudar 1h para o TCC', pilar: 'INT', dias: [1,1,0,1,1,1,0,1,1,0,1,1,1,0] },
@@ -814,7 +823,7 @@
             }
         }
 
-        // --- CAIXA DE ENTRADA: LIFE OS INBOX (GOOGLE TASKS) ---
+        // --- LISTA UNIFICADA: LIFE OS INBOX (GOOGLE TASKS) ---
         async function ensureInboxListId() {
             if (!isTokenValid()) return null;
             if (inboxListId) return inboxListId;
@@ -832,7 +841,6 @@
                 return inboxListId;
             }
 
-            // Cria automaticamente a lista "Life OS Inbox" caso não exista na conta
             const createRes = await fetch('https://tasks.googleapis.com/tasks/v1/users/@me/lists', {
                 method: 'POST',
                 headers: {
@@ -876,13 +884,22 @@
                 if (!res.ok) throw new Error('Falha ao buscar tarefas da Inbox');
 
                 const data = await res.json();
-                inboxItems = (data.items || []).filter(item => item.title && item.title.trim() !== '' && !item.deleted && item.status !== 'completed');
+                // Filtra apenas tarefas capturadas fora do LifeOS (IDs que ainda não pertencem ao state.tasks)
+                const managedGoogleIds = new Set(state.tasks.map(t => t.googleTaskId).filter(Boolean));
+
+                inboxItems = (data.items || []).filter(item =>
+                    item.title &&
+                    item.title.trim() !== '' &&
+                    !item.deleted &&
+                    item.status !== 'completed' &&
+                    !managedGoogleIds.has(item.id)
+                );
 
                 renderInbox();
                 if (showFeedback) {
                     showToast(inboxItems.length > 0
-                        ? `📥 ${inboxItems.length} item(ns) encontrado(s) na Life OS Inbox!`
-                        : '📥 Sua Life OS Inbox está zerada!');
+                        ? `📥 ${inboxItems.length} captura(s) nova(s) aguardando triagem na Life OS Inbox!`
+                        : '📥 Nenhuma captura nova pendente de triagem na Life OS Inbox!');
                 }
             } catch (err) {
                 console.error(err);
@@ -914,7 +931,7 @@
             const badge = document.getElementById('inbox-count-badge');
             const navBadge = document.getElementById('nav-inbox-badge');
 
-            if (badge) badge.textContent = `${inboxItems.length} pendente(s)`;
+            if (badge) badge.textContent = `${inboxItems.length} para triar`;
             if (navBadge) {
                 if (inboxItems.length > 0) {
                     navBadge.textContent = inboxItems.length;
@@ -928,7 +945,7 @@
             if (!isTokenValid() && inboxItems.length === 0) {
                 container.innerHTML = `
                     <p class="text-xs text-slate-500 italic bg-white/70 rounded-2xl p-3.5 border border-slate-200/60">
-                        Conecte sua conta Google e clique em <strong>↻ Buscar Inbox</strong> para carregar suas capturas da lista <strong>Life OS Inbox</strong>.
+                        Conecte sua conta Google e clique em <strong>↻ Buscar Inbox</strong> para carregar novas capturas da lista <strong>Life OS Inbox</strong>.
                     </p>`;
                 return;
             }
@@ -936,7 +953,7 @@
             if (inboxItems.length === 0) {
                 container.innerHTML = `
                     <div class="text-xs text-emerald-700 font-semibold bg-emerald-50/70 rounded-2xl p-3.5 border border-emerald-200/70 flex items-center justify-between">
-                        <span>✨ Caixa de entrada zerada! Nenhuma captura pendente na lista <strong>Life OS Inbox</strong>.</span>
+                        <span>✨ Tudo triado! Nenhuma captura nova aguardando organização na lista <strong>Life OS Inbox</strong>.</span>
                     </div>`;
                 return;
             }
@@ -992,6 +1009,7 @@
             const planId = planVal ? Number(planVal) : null;
 
             try {
+                const listId = await ensureInboxListId();
                 const newTask = {
                     id: Date.now(),
                     pilar,
@@ -1000,21 +1018,16 @@
                     dueDate,
                     texto: item.title.trim(),
                     concluida: false,
-                    googleTaskId: null,
+                    googleTaskId: item.id,
+                    googleListId: listId,
                     isRecurring: false,
                     frequency: 'none',
                     recurrenceEndDate: ''
                 };
 
-                if (isTokenValid()) {
-                    newTask.googleTaskId = await pushTaskToGoogle(newTask);
-                    // Remove da Life OS Inbox após importar com sucesso para manter Zero Inbox
-                    if (inboxListId) {
-                        await fetch(`https://tasks.googleapis.com/tasks/v1/lists/${inboxListId}/tasks/${item.id}`, {
-                            method: 'DELETE',
-                            headers: { 'Authorization': `Bearer ${accessToken}` }
-                        });
-                    }
+                // Atualiza a própria tarefa no lugar dentro da lista Life OS Inbox (sem duplicar nem mover)
+                if (isTokenValid() && listId) {
+                    await updateTaskDetailsInGoogle(newTask);
                 }
 
                 state.tasks.unshift(newTask);
@@ -1024,7 +1037,7 @@
                 renderInbox();
                 renderTasks();
                 renderPlanos();
-                showToast('✅ Tarefa triada da Inbox e sincronizada com o LifeOS!');
+                showToast('✅ Tarefa triada e mantida unificada na Life OS Inbox!');
             } catch (err) {
                 console.error(err);
                 showToast('Erro ao importar tarefa da Inbox.', true);
@@ -1052,7 +1065,7 @@
             }
         }
 
-        // --- GOOGLE TASKS SYNC (@default) ---
+        // --- GOOGLE TASKS SYNC UNIFICADO (LIFE OS INBOX + RETROCOMPATIBILIDADE LEGADA) ---
         function buildTaskNotes(taskObj) {
             const linkedPlan = state.planos.find(p => Number(p.id) === Number(taskObj.planId));
             const prioLabel = PRIORITY_STYLES[taskObj.priority]?.label || 'Média';
@@ -1066,8 +1079,17 @@
             return notesParts.join(' | ');
         }
 
+        function getTaskGoogleListId(taskObj) {
+            // Tarefas criadas/triadas na nova versão têm googleListId = inboxListId.
+            // Tarefas legadas criadas antes desta atualização permanecem em '@default' até serem concluídas/removidas.
+            return taskObj.googleListId || '@default';
+        }
+
         async function pushTaskToGoogle(taskObj) {
             if (!isTokenValid()) return null;
+
+            const listId = await ensureInboxListId();
+            if (!listId) return null;
 
             const payload = {
                 title: `[${taskObj.pilar}] ${taskObj.texto}`,
@@ -1077,7 +1099,7 @@
                 payload.due = toGoogleTasksRFC3339(taskObj.dueDate);
             }
 
-            const res = await fetch('https://tasks.googleapis.com/tasks/v1/lists/@default/tasks', {
+            const res = await fetch(`https://tasks.googleapis.com/tasks/v1/lists/${listId}/tasks`, {
                 method: 'POST',
                 headers: {
                     'Authorization': `Bearer ${accessToken}`,
@@ -1089,16 +1111,17 @@
             if (res.status === 401) { handleExpiredToken(); return null; }
             if (!res.ok) throw new Error('Falha na API Google Tasks');
             const data = await res.json();
-            return data.id;
+            return { id: data.id, listId };
         }
 
-        async function updateTaskStatusInGoogle(googleTaskId, isCompleted) {
-            if (!isTokenValid() || !googleTaskId) return;
+        async function updateTaskStatusInGoogle(taskObj, isCompleted) {
+            if (!isTokenValid() || !taskObj.googleTaskId) return;
             try {
+                const listId = getTaskGoogleListId(taskObj);
                 const payload = { status: isCompleted ? 'completed' : 'needsAction' };
                 if (!isCompleted) payload.completed = null;
 
-                const res = await fetch(`https://tasks.googleapis.com/tasks/v1/lists/@default/tasks/${googleTaskId}`, {
+                const res = await fetch(`https://tasks.googleapis.com/tasks/v1/lists/${listId}/tasks/${taskObj.googleTaskId}`, {
                     method: 'PATCH',
                     headers: {
                         'Authorization': `Bearer ${accessToken}`,
@@ -1115,12 +1138,13 @@
         async function updateTaskDetailsInGoogle(taskObj) {
             if (!isTokenValid() || !taskObj.googleTaskId) return;
             try {
+                const listId = getTaskGoogleListId(taskObj);
                 const payload = {
                     title: `[${taskObj.pilar}] ${taskObj.texto}`,
                     notes: buildTaskNotes(taskObj),
                     due: taskObj.dueDate ? toGoogleTasksRFC3339(taskObj.dueDate) : null
                 };
-                const res = await fetch(`https://tasks.googleapis.com/tasks/v1/lists/@default/tasks/${taskObj.googleTaskId}`, {
+                const res = await fetch(`https://tasks.googleapis.com/tasks/v1/lists/${listId}/tasks/${taskObj.googleTaskId}`, {
                     method: 'PATCH',
                     headers: {
                         'Authorization': `Bearer ${accessToken}`,
@@ -1134,10 +1158,11 @@
             }
         }
 
-        async function deleteTaskFromGoogle(googleTaskId) {
-            if (!isTokenValid() || !googleTaskId) return;
+        async function deleteTaskFromGoogle(taskObj) {
+            if (!isTokenValid() || !taskObj.googleTaskId) return;
             try {
-                const res = await fetch(`https://tasks.googleapis.com/tasks/v1/lists/@default/tasks/${googleTaskId}`, {
+                const listId = getTaskGoogleListId(taskObj);
+                const res = await fetch(`https://tasks.googleapis.com/tasks/v1/lists/${listId}/tasks/${taskObj.googleTaskId}`, {
                     method: 'DELETE',
                     headers: { 'Authorization': `Bearer ${accessToken}` }
                 });
@@ -1159,12 +1184,29 @@
             }
 
             try {
-                const res = await fetch('https://tasks.googleapis.com/tasks/v1/lists/@default/tasks?showCompleted=true&showHidden=true&maxResults=100', {
+                const listId = await ensureInboxListId();
+                if (!listId) return;
+
+                // Busca todas as tarefas da lista unificada Life OS Inbox
+                const resInbox = await fetch(`https://tasks.googleapis.com/tasks/v1/lists/${listId}/tasks?showCompleted=true&showHidden=true&maxResults=100`, {
                     headers: { 'Authorization': `Bearer ${accessToken}` }
                 });
-                if (res.status === 401) { handleExpiredToken(); return; }
-                const data = await res.json();
-                const remoteItems = data.items || [];
+                if (resInbox.status === 401) { handleExpiredToken(); return; }
+                const dataInbox = await resInbox.json();
+                const inboxRemoteItems = dataInbox.items || [];
+
+                // Se ainda houver tarefas legadas ligadas à lista @default, busca também para manter compatibilidade
+                let defaultRemoteItems = [];
+                const hasLegacyTasks = state.tasks.some(t => t.googleTaskId && (!t.googleListId || t.googleListId === '@default'));
+                if (hasLegacyTasks) {
+                    const resDef = await fetch('https://tasks.googleapis.com/tasks/v1/lists/@default/tasks?showCompleted=true&showHidden=true&maxResults=100', {
+                        headers: { 'Authorization': `Bearer ${accessToken}` }
+                    });
+                    if (resDef.ok) {
+                        const dataDef = await resDef.json();
+                        defaultRemoteItems = dataDef.items || [];
+                    }
+                }
 
                 let updatedCount = 0;
                 let deletedCount = 0;
@@ -1172,7 +1214,11 @@
                 state.tasks = state.tasks.filter(localTask => {
                     if (!localTask.googleTaskId) return true;
 
-                    const remoteMatch = remoteItems.find(rt => rt.id === localTask.googleTaskId);
+                    const sourceItems = (localTask.googleListId && localTask.googleListId !== '@default')
+                        ? inboxRemoteItems
+                        : defaultRemoteItems;
+
+                    const remoteMatch = sourceItems.find(rt => rt.id === localTask.googleTaskId);
                     if (!remoteMatch || remoteMatch.deleted) {
                         deletedCount++;
                         return false;
@@ -1199,7 +1245,7 @@
                 renderTasks();
                 renderPlanos();
                 await fetchInboxTasks(false);
-                showToast(`Google Tasks sincronizado: ${updatedCount} atualizada(s), ${deletedCount} removida(s).`);
+                showToast(`Life OS Inbox sincronizada: ${updatedCount} atualizada(s), ${deletedCount} removida(s).`);
             } catch (e) {
                 showToast('Erro ao sincronizar com Google Tasks.', true);
             } finally {
@@ -1614,6 +1660,7 @@
                     texto,
                     concluida: false,
                     googleTaskId: null,
+                    googleListId: null,
                     isRecurring,
                     frequency,
                     recurrenceEndDate
@@ -1625,12 +1672,15 @@
                 closeTaskModal();
 
                 if (isTokenValid()) {
-                    pushTaskToGoogle(newTask).then(gId => {
-                        newTask.googleTaskId = gId;
-                        saveState();
+                    pushTaskToGoogle(newTask).then(res => {
+                        if (res) {
+                            newTask.googleTaskId = res.id;
+                            newTask.googleListId = res.listId;
+                            saveState();
+                        }
                     }).catch(() => {});
                 }
-                showToast('✅ Tarefa criada!');
+                showToast('✅ Tarefa criada na Life OS Inbox!');
             }
         }
 
@@ -1771,7 +1821,7 @@
         function renderWeeklyCalendarHTML(pendingTasks) {
             const todayIso = getLocalISODate();
             const now = new Date();
-            const dayOfWeek = now.getDay(); // 0=Dom, 1=Seg...
+            const dayOfWeek = now.getDay();
             const diffToMonday = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
 
             const monday = new Date(now.getFullYear(), now.getMonth(), now.getDate() + diffToMonday + (currentWeekOffset * 7));
@@ -1952,6 +2002,7 @@
                 texto,
                 concluida: false,
                 googleTaskId: null,
+                googleListId: null,
                 isRecurring: false,
                 frequency: 'none',
                 recurrenceEndDate: ''
@@ -1963,9 +2014,12 @@
             renderPlanos();
 
             if (isTokenValid()) {
-                pushTaskToGoogle(newTask).then(gId => {
-                    newTask.googleTaskId = gId;
-                    saveState();
+                pushTaskToGoogle(newTask).then(res => {
+                    if (res) {
+                        newTask.googleTaskId = res.id;
+                        newTask.googleListId = res.listId;
+                        saveState();
+                    }
                 }).catch(() => {});
             }
 
@@ -2017,13 +2071,18 @@
                     texto,
                     concluida: false,
                     googleTaskId: null,
+                    googleListId: null,
                     isRecurring,
                     frequency,
                     recurrenceEndDate
                 };
 
                 if (isTokenValid()) {
-                    newTask.googleTaskId = await pushTaskToGoogle(newTask);
+                    const pushed = await pushTaskToGoogle(newTask);
+                    if (pushed) {
+                        newTask.googleTaskId = pushed.id;
+                        newTask.googleListId = pushed.listId;
+                    }
                 }
 
                 state.tasks.unshift(newTask);
@@ -2040,7 +2099,7 @@
                 renderPlanos();
 
                 if (isTokenValid()) {
-                    showToast('✅ Tarefa enviada com prazo e prioridade para o Google Tarefas!');
+                    showToast('✅ Tarefa salva na lista Life OS Inbox!');
                 } else {
                     showToast('✅ Tarefa salva localmente! Conecte sua conta Google no topo para sincronizar.');
                 }
@@ -2077,6 +2136,7 @@
                         texto: task.texto,
                         concluida: false,
                         googleTaskId: null,
+                        googleListId: null,
                         isRecurring: true,
                         frequency: task.frequency,
                         recurrenceEndDate: task.recurrenceEndDate
@@ -2085,12 +2145,15 @@
                     state.tasks.unshift(nextTask);
 
                     if (isTokenValid()) {
-                        pushTaskToGoogle(nextTask).then(gId => {
-                            nextTask.googleTaskId = gId;
-                            saveState();
+                        pushTaskToGoogle(nextTask).then(res => {
+                            if (res) {
+                                nextTask.googleTaskId = res.id;
+                                nextTask.googleListId = res.listId;
+                                saveState();
+                            }
                         }).catch(() => {});
                     }
-                    showToast('🔄 Tarefa recorrente concluída! Próxima data gerada.');
+                    showToast('🔄 Tarefa recorrente concluída! Próxima data gerada na Life OS Inbox.');
                 }
             }
 
@@ -2099,7 +2162,7 @@
             renderPlanos();
 
             if (task.googleTaskId && isTokenValid()) {
-                await updateTaskStatusInGoogle(task.googleTaskId, task.concluida);
+                await updateTaskStatusInGoogle(task, task.concluida);
             }
 
             if (task.concluida && task.planId) {
@@ -2113,15 +2176,14 @@
             const task = state.tasks.find(t => t.id === id);
             if (!task) return;
 
-            const googleId = task.googleTaskId;
             state.tasks = state.tasks.filter(t => t.id !== id);
             saveState();
             renderTasks();
             renderPlanos();
 
-            if (googleId && isTokenValid()) {
-                await deleteTaskFromGoogle(googleId);
-                showToast('Tarefa excluída do planner e do Google Tarefas.');
+            if (task.googleTaskId && isTokenValid()) {
+                await deleteTaskFromGoogle(task);
+                showToast('Tarefa excluída do planner e da Life OS Inbox.');
             } else {
                 showToast('Tarefa removida.');
             }
