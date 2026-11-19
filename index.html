@@ -55,8 +55,81 @@
 </head>
 <body class="min-h-screen pb-16">
 
+    <!-- Toast -->
     <div id="toast" class="toast fixed bottom-6 right-6 z-50 bg-emerald-600 text-white px-5 py-3.5 rounded-2xl shadow-xl flex items-center gap-3 font-semibold text-xs">
         <span id="toast-msg">Operação realizada com sucesso!</span>
+    </div>
+
+    <!-- Modal de Edição / Criação Completa de Tarefa -->
+    <div id="task-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-900/45 backdrop-blur-sm p-4">
+        <div class="bg-white rounded-3xl shadow-2xl border border-slate-200 w-full max-w-lg p-6 space-y-4 max-h-[90vh] overflow-y-auto">
+            <div class="flex items-center justify-between">
+                <h3 id="modal-task-heading" class="text-base font-extrabold text-slate-900">Editar Tarefa</h3>
+                <button onclick="closeTaskModal()" class="text-slate-400 hover:text-slate-700 font-bold text-sm px-2 py-1 rounded-lg hover:bg-slate-100">✕</button>
+            </div>
+
+            <input type="hidden" id="modal-task-id">
+
+            <div class="space-y-3">
+                <div>
+                    <label class="block text-[11px] font-bold text-slate-600 mb-1">Descrição da Tarefa</label>
+                    <input type="text" id="modal-task-texto" placeholder="O que precisa ser feito?" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs font-semibold text-slate-800 focus:outline-none focus:border-[#FF6B00] focus:bg-white">
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-[11px] font-bold text-slate-600 mb-1">Pilar</label>
+                        <select id="modal-task-pilar" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-xs font-semibold text-slate-700 focus:outline-none focus:border-[#FF6B00]"></select>
+                    </div>
+                    <div>
+                        <label class="block text-[11px] font-bold text-slate-600 mb-1">Prioridade</label>
+                        <select id="modal-task-priority" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-xs font-semibold text-slate-700 focus:outline-none focus:border-[#FF6B00]">
+                            <option value="ALTA">🔴 Prioridade Alta</option>
+                            <option value="MEDIA">🟡 Prioridade Média</option>
+                            <option value="BAIXA">🟢 Prioridade Baixa</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-[11px] font-bold text-slate-600 mb-1">Data de Prazo</label>
+                        <input type="date" id="modal-task-duedate" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-xs font-semibold text-slate-700 focus:outline-none focus:border-[#FF6B00]">
+                    </div>
+                    <div>
+                        <label class="block text-[11px] font-bold text-slate-600 mb-1">Plano de Ação Vinculado</label>
+                        <select id="modal-task-plan" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-xs font-semibold text-slate-700 focus:outline-none focus:border-[#FF6B00]"></select>
+                    </div>
+                </div>
+
+                <div class="bg-slate-50 p-3.5 rounded-2xl border border-slate-200/80 space-y-2.5">
+                    <label class="flex items-center gap-2 cursor-pointer text-xs font-bold text-slate-700 select-none">
+                        <input type="checkbox" id="modal-task-recurring" onchange="toggleModalRecurring(this)" class="w-4 h-4 accent-[#FF6B00] rounded">
+                        🔄 Tarefa Recorrente
+                    </label>
+                    <div id="modal-recurring-options" class="hidden grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-1">
+                        <div>
+                            <label class="block text-[10px] font-bold text-slate-500 mb-1">Frequência</label>
+                            <select id="modal-task-frequency" class="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold text-slate-700 focus:outline-none focus:border-[#FF6B00]">
+                                <option value="diaria">Repetição Diária</option>
+                                <option value="semanal">Repetição Semanal</option>
+                                <option value="quinzenal">Repetição Quinzenal</option>
+                                <option value="mensal">Repetição Mensal</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-bold text-slate-500 mb-1">Repetir até</label>
+                            <input type="date" id="modal-task-rec-end" class="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold text-slate-700 focus:outline-none focus:border-[#FF6B00]">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
+                <button onclick="closeTaskModal()" class="px-4 py-2 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-100 transition">Cancelar</button>
+                <button id="modal-save-btn" onclick="saveTaskModal()" class="px-5 py-2 rounded-xl text-xs font-bold bg-[#FF6B00] hover:bg-orange-600 text-white shadow-md shadow-orange-500/20 transition">Salvar Alterações</button>
+            </div>
+        </div>
     </div>
 
     <header class="bg-white/90 backdrop-blur-md border-b border-slate-200/80 sticky top-0 z-40">
@@ -117,8 +190,9 @@
             <button onclick="switchTab('planos', this)" class="tab-btn px-5 py-2.5 rounded-xl text-xs font-bold transition whitespace-nowrap text-slate-600 hover:bg-white/80">
                 Planos de Ação
             </button>
-            <button onclick="switchTab('bujo', this)" class="tab-btn px-5 py-2.5 rounded-xl text-xs font-bold transition whitespace-nowrap text-slate-600 hover:bg-white/80">
-                Diário & Google Tarefas
+            <button onclick="switchTab('bujo', this)" class="tab-btn px-5 py-2.5 rounded-xl text-xs font-bold transition whitespace-nowrap text-slate-600 hover:bg-white/80 flex items-center gap-1.5">
+                <span>Diário & Google Tarefas</span>
+                <span id="nav-inbox-badge" class="hidden bg-rose-500 text-white text-[10px] px-1.5 py-0.2 rounded-full font-extrabold">0</span>
             </button>
             <button onclick="switchTab('habitos', this)" class="tab-btn px-5 py-2.5 rounded-xl text-xs font-bold transition whitespace-nowrap text-slate-600 hover:bg-white/80">
                 Rastreador de Hábitos
@@ -181,6 +255,40 @@
 
         <!-- ABA 3: DIÁRIO & GOOGLE TAREFAS -->
         <section id="tab-bujo" class="tab-content mt-6 hidden">
+
+            <!-- CAIXA DE ENTRADA (LIFE OS INBOX — GOOGLE TASKS) -->
+            <div class="glass-card p-5 rounded-3xl mb-6 border-orange-200/80 bg-gradient-to-r from-orange-50/70 via-white/90 to-amber-50/50">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div class="flex items-center gap-3">
+                        <div class="w-9 h-9 rounded-2xl bg-orange-100 text-[#FF6B00] flex items-center justify-center text-base font-extrabold">
+                            📥
+                        </div>
+                        <div>
+                            <div class="flex items-center gap-2 flex-wrap">
+                                <h2 class="text-sm font-extrabold text-slate-800">Caixa de Entrada (Life OS Inbox)</h2>
+                                <span id="inbox-count-badge" class="text-[11px] bg-orange-100 text-[#FF6B00] px-2.5 py-0.5 rounded-full font-extrabold">0 pendente(s)</span>
+                            </div>
+                            <p class="text-[11px] text-slate-500">Capture tarefas rápidas na lista <strong>Life OS Inbox</strong> do Google Tasks e faça a triagem aqui.</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-2 self-start sm:self-auto">
+                        <button id="btn-fetch-inbox" onclick="fetchInboxTasks(true)" class="bg-[#FF6B00] hover:bg-orange-600 text-white px-3.5 py-2 rounded-xl text-xs font-bold shadow-sm shadow-orange-500/20 transition flex items-center gap-1.5">
+                            <span>↻ Buscar Inbox</span>
+                        </button>
+                        <button onclick="toggleInboxPanel()" id="btn-toggle-inbox" class="bg-white hover:bg-slate-100 border border-slate-200 text-slate-600 px-3 py-2 rounded-xl text-xs font-bold transition">
+                            Recolher
+                        </button>
+                    </div>
+                </div>
+
+                <div id="inbox-list-container" class="mt-4 space-y-2.5">
+                    <p class="text-xs text-slate-500 italic bg-white/70 rounded-2xl p-3.5 border border-slate-200/60">
+                        Conecte sua conta Google e clique em <strong>↻ Buscar Inbox</strong> para carregar suas capturas da lista <strong>Life OS Inbox</strong>.
+                    </p>
+                </div>
+            </div>
+
+            <!-- Formulário de Registro Rápido -->
             <div class="glass-card p-6 rounded-3xl mb-6">
                 <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4">
                     <div>
@@ -240,7 +348,7 @@
                 </div>
 
                 <div class="grid grid-cols-1 sm:grid-cols-12 gap-3">
-                    <input type="text" id="task-input" placeholder="Ex: Revisar referencial teórico do capítulo 2..." class="sm:col-span-9 bg-white border border-slate-200 rounded-xl px-4 py-2.5 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-[#FF6B00]">
+                    <input type="text" id="task-input" onkeydown="if(event.key==='Enter') addNewTask()" placeholder="Ex: Revisar referencial teórico do capítulo 2..." class="sm:col-span-9 bg-white border border-slate-200 rounded-xl px-4 py-2.5 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-[#FF6B00]">
 
                     <button id="btn-sync-task" onclick="addNewTask()" class="sm:col-span-3 bg-slate-900 hover:bg-slate-800 disabled:bg-slate-400 text-white px-4 py-2.5 rounded-xl text-xs font-bold transition flex items-center justify-center gap-2 shadow-sm">
                         <span>+ Criar & Sincronizar</span>
@@ -248,7 +356,7 @@
                 </div>
             </div>
 
-            <!-- Barra de Controle: Ordenação por Data/Prioridade e Alternador Cards vs Tabela Excel -->
+            <!-- Barra de Controle: Ordenação e Alternador Cards vs Tabela Excel vs Calendário Semanal -->
             <div class="glass-card px-5 py-3.5 rounded-2xl mb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div class="flex items-center gap-3 flex-wrap">
                     <span class="text-xs font-extrabold text-slate-700">Ordenar por:</span>
@@ -259,17 +367,20 @@
                     </select>
                 </div>
 
-                <div class="flex items-center gap-1.5 bg-slate-100 p-1 rounded-xl self-start sm:self-auto">
+                <div class="flex items-center gap-1.5 bg-slate-100 p-1 rounded-xl self-start sm:self-auto flex-wrap">
                     <button id="view-btn-cards" onclick="setTaskViewMode('cards')" class="px-3 py-1.5 rounded-lg text-xs font-bold transition bg-white text-slate-800 shadow-sm">
                         🗂️ Cards
                     </button>
                     <button id="view-btn-table" onclick="setTaskViewMode('table')" class="px-3 py-1.5 rounded-lg text-xs font-bold transition text-slate-600 hover:text-slate-900">
                         📊 Tabela (Excel)
                     </button>
+                    <button id="view-btn-week" onclick="setTaskViewMode('week')" class="px-3 py-1.5 rounded-lg text-xs font-bold transition text-slate-600 hover:text-slate-900">
+                        📅 Semanal
+                    </button>
                 </div>
             </div>
 
-            <!-- Lista de Tarefas Pendentes (Cards ou Tabela Excel) -->
+            <!-- Lista de Tarefas Pendentes (Cards, Tabela Excel ou Calendário Semanal) -->
             <div id="tasks-active-container" class="space-y-3"></div>
 
             <!-- Seção Recolhível de Tarefas Concluídas -->
@@ -326,6 +437,7 @@
         const CLIENT_ID = "889768565480-jb7ou6qj9v3oj201d0elohoke5m58rvf.apps.googleusercontent.com";
         const SCOPES = "https://www.googleapis.com/auth/tasks https://www.googleapis.com/auth/drive.appdata";
         const DRIVE_FILE_NAME = "lifeos_cloud_state.json";
+        const INBOX_LIST_NAME = "Life OS Inbox";
 
         let tokenClient = null;
         let accessToken = null;
@@ -333,10 +445,16 @@
         let driveFileId = null;
         let saveTimeout = null;
 
+        // Estado da Caixa de Entrada (Google Tasks: Life OS Inbox)
+        let inboxListId = null;
+        let inboxItems = [];
+        let inboxPanelExpanded = true;
+
         // Controles de visualização da aba de tarefas
         let taskSortMode = 'date_asc';
         let taskViewMode = 'cards';
         let showCompletedTasks = false;
+        let currentWeekOffset = 0;
 
         const PILLAR_COLORS = {
             CAR: 'bg-blue-100 text-blue-700',
@@ -418,6 +536,13 @@
             return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
         }
 
+        function getLocalISODate(dateObj = new Date()) {
+            const y = dateObj.getFullYear();
+            const m = String(dateObj.getMonth() + 1).padStart(2, '0');
+            const d = String(dateObj.getDate()).padStart(2, '0');
+            return `${y}-${m}-${d}`;
+        }
+
         function formatDateBR(isoDate) {
             if (!isoDate || typeof isoDate !== 'string') return '';
             const parts = isoDate.split('T')[0].split('-');
@@ -427,8 +552,7 @@
 
         function isDateOverdue(isoDate) {
             if (!isoDate || typeof isoDate !== 'string') return false;
-            const todayStr = new Date().toISOString().split('T')[0];
-            return isoDate.split('T')[0] < todayStr;
+            return isoDate.split('T')[0] < getLocalISODate();
         }
 
         function toGoogleTasksRFC3339(isoDate) {
@@ -439,27 +563,26 @@
         function toggleRecurringOptions(el) {
             const container = document.getElementById('recurring-options');
             if (!container) return;
-            if (el.checked) {
-                container.classList.remove('hidden');
-            } else {
-                container.classList.add('hidden');
-            }
+            if (el.checked) container.classList.remove('hidden');
+            else container.classList.add('hidden');
+        }
+
+        function toggleModalRecurring(el) {
+            const container = document.getElementById('modal-recurring-options');
+            if (!container) return;
+            if (el.checked) container.classList.remove('hidden');
+            else container.classList.add('hidden');
         }
 
         function getNextDueDate(currentDateStr, frequency) {
-            let baseDate = currentDateStr ? new Date(currentDateStr + 'T00:00:00') : new Date();
+            let baseDate = currentDateStr ? new Date(currentDateStr + 'T12:00:00') : new Date();
             if (isNaN(baseDate.getTime())) baseDate = new Date();
             
-            if (frequency === 'diaria') {
-                baseDate.setDate(baseDate.getDate() + 1);
-            } else if (frequency === 'semanal') {
-                baseDate.setDate(baseDate.getDate() + 7);
-            } else if (frequency === 'quinzenal') {
-                baseDate.setDate(baseDate.getDate() + 14);
-            } else if (frequency === 'mensal') {
-                baseDate.setMonth(baseDate.getMonth() + 1);
-            }
-            return baseDate.toISOString().split('T')[0];
+            if (frequency === 'diaria') baseDate.setDate(baseDate.getDate() + 1);
+            else if (frequency === 'semanal') baseDate.setDate(baseDate.getDate() + 7);
+            else if (frequency === 'quinzenal') baseDate.setDate(baseDate.getDate() + 14);
+            else if (frequency === 'mensal') baseDate.setMonth(baseDate.getMonth() + 1);
+            return getLocalISODate(baseDate);
         }
 
         function updateCloudStatus(text, colorClass) {
@@ -540,15 +663,16 @@
             if (target) target.classList.remove('hidden');
 
             document.querySelectorAll('.tab-btn').forEach(btn => {
-                btn.className = "tab-btn px-5 py-2.5 rounded-xl text-xs font-bold transition whitespace-nowrap text-slate-600 hover:bg-white/80";
+                btn.className = "tab-btn px-5 py-2.5 rounded-xl text-xs font-bold transition whitespace-nowrap text-slate-600 hover:bg-white/80 flex items-center gap-1.5";
             });
             if (btnEl) {
-                btnEl.className = "tab-btn px-5 py-2.5 rounded-xl text-xs font-bold transition whitespace-nowrap bg-[#FF6B00] text-white shadow-md shadow-orange-500/20";
+                btnEl.className = "tab-btn px-5 py-2.5 rounded-xl text-xs font-bold transition whitespace-nowrap bg-[#FF6B00] text-white shadow-md shadow-orange-500/20 flex items-center gap-1.5";
             }
 
             if (tabId === 'bujo') {
                 populatePlanDropdown();
                 renderTasks();
+                renderInbox();
             }
             if (tabId === 'planos') renderPlanos();
         }
@@ -577,6 +701,7 @@
                         if (statusText) statusText.textContent = "Conectado ✓";
 
                         await syncWithGoogleDrive(false);
+                        await fetchInboxTasks(false);
                     },
                 });
             }
@@ -600,9 +725,11 @@
             const icon = document.getElementById('force-sync-icon');
             if (icon) icon.classList.add('animate-spin', 'inline-block');
             await syncWithGoogleDrive(true);
+            await fetchInboxTasks(false);
             if (icon) icon.classList.remove('animate-spin', 'inline-block');
         }
 
+        // --- GOOGLE DRIVE SYNC ---
         async function syncWithGoogleDrive(forcePull = false) {
             if (!isTokenValid()) return;
             updateCloudStatus('Sincronizando...', 'text-indigo-600');
@@ -687,22 +814,264 @@
             }
         }
 
-        async function pushTaskToGoogle(taskObj) {
+        // --- CAIXA DE ENTRADA: LIFE OS INBOX (GOOGLE TASKS) ---
+        async function ensureInboxListId() {
             if (!isTokenValid()) return null;
+            if (inboxListId) return inboxListId;
 
+            const listsRes = await fetch('https://tasks.googleapis.com/tasks/v1/users/@me/lists?maxResults=100', {
+                headers: { 'Authorization': `Bearer ${accessToken}` }
+            });
+            if (listsRes.status === 401) { handleExpiredToken(); return null; }
+            if (!listsRes.ok) throw new Error('Falha ao listar listas do Google Tasks');
+
+            const listsData = await listsRes.json();
+            const found = (listsData.items || []).find(l => l.title && l.title.trim().toLowerCase() === INBOX_LIST_NAME.toLowerCase());
+            if (found) {
+                inboxListId = found.id;
+                return inboxListId;
+            }
+
+            // Cria automaticamente a lista "Life OS Inbox" caso não exista na conta
+            const createRes = await fetch('https://tasks.googleapis.com/tasks/v1/users/@me/lists', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${accessToken}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ title: INBOX_LIST_NAME })
+            });
+            if (createRes.status === 401) { handleExpiredToken(); return null; }
+            if (!createRes.ok) throw new Error('Falha ao criar lista Life OS Inbox');
+
+            const created = await createRes.json();
+            inboxListId = created.id;
+            showToast(`📥 Lista "${INBOX_LIST_NAME}" criada no seu Google Tasks!`);
+            return inboxListId;
+        }
+
+        async function fetchInboxTasks(showFeedback = false) {
+            if (!isTokenValid()) {
+                if (showFeedback) {
+                    showToast('Conecte sua conta Google no topo para buscar a Caixa de Entrada.', true);
+                    handleGoogleAuth();
+                }
+                return;
+            }
+
+            const btn = document.getElementById('btn-fetch-inbox');
+            if (btn) {
+                btn.disabled = true;
+                btn.innerHTML = '<span>↻ Buscando...</span>';
+            }
+
+            try {
+                const listId = await ensureInboxListId();
+                if (!listId) return;
+
+                const res = await fetch(`https://tasks.googleapis.com/tasks/v1/lists/${listId}/tasks?showCompleted=false&showHidden=false&maxResults=100`, {
+                    headers: { 'Authorization': `Bearer ${accessToken}` }
+                });
+                if (res.status === 401) { handleExpiredToken(); return; }
+                if (!res.ok) throw new Error('Falha ao buscar tarefas da Inbox');
+
+                const data = await res.json();
+                inboxItems = (data.items || []).filter(item => item.title && item.title.trim() !== '' && !item.deleted && item.status !== 'completed');
+
+                renderInbox();
+                if (showFeedback) {
+                    showToast(inboxItems.length > 0
+                        ? `📥 ${inboxItems.length} item(ns) encontrado(s) na Life OS Inbox!`
+                        : '📥 Sua Life OS Inbox está zerada!');
+                }
+            } catch (err) {
+                console.error(err);
+                if (showFeedback) showToast('Erro ao buscar a Life OS Inbox.', true);
+            } finally {
+                if (btn) {
+                    btn.disabled = false;
+                    btn.innerHTML = '<span>↻ Buscar Inbox</span>';
+                }
+            }
+        }
+
+        function toggleInboxPanel() {
+            inboxPanelExpanded = !inboxPanelExpanded;
+            const container = document.getElementById('inbox-list-container');
+            const btn = document.getElementById('btn-toggle-inbox');
+            if (!container || !btn) return;
+            if (inboxPanelExpanded) {
+                container.classList.remove('hidden');
+                btn.textContent = 'Recolher';
+            } else {
+                container.classList.add('hidden');
+                btn.textContent = 'Expandir';
+            }
+        }
+
+        function renderInbox() {
+            const container = document.getElementById('inbox-list-container');
+            const badge = document.getElementById('inbox-count-badge');
+            const navBadge = document.getElementById('nav-inbox-badge');
+
+            if (badge) badge.textContent = `${inboxItems.length} pendente(s)`;
+            if (navBadge) {
+                if (inboxItems.length > 0) {
+                    navBadge.textContent = inboxItems.length;
+                    navBadge.classList.remove('hidden');
+                } else {
+                    navBadge.classList.add('hidden');
+                }
+            }
+            if (!container) return;
+
+            if (!isTokenValid() && inboxItems.length === 0) {
+                container.innerHTML = `
+                    <p class="text-xs text-slate-500 italic bg-white/70 rounded-2xl p-3.5 border border-slate-200/60">
+                        Conecte sua conta Google e clique em <strong>↻ Buscar Inbox</strong> para carregar suas capturas da lista <strong>Life OS Inbox</strong>.
+                    </p>`;
+                return;
+            }
+
+            if (inboxItems.length === 0) {
+                container.innerHTML = `
+                    <div class="text-xs text-emerald-700 font-semibold bg-emerald-50/70 rounded-2xl p-3.5 border border-emerald-200/70 flex items-center justify-between">
+                        <span>✨ Caixa de entrada zerada! Nenhuma captura pendente na lista <strong>Life OS Inbox</strong>.</span>
+                    </div>`;
+                return;
+            }
+
+            const pillarOpts = state.pilares.map(p => `<option value="${p.id}">[${p.id}] ${p.nome}</option>`).join('');
+            const planOpts = `<option value="">Sem plano</option>` + state.planos.map(pl => `<option value="${pl.id}">[${pl.pilar}] ${escapeHtml(pl.titulo)}</option>`).join('');
+
+            container.innerHTML = inboxItems.map((item, idx) => {
+                const dueIso = item.due ? item.due.split('T')[0] : '';
+                return `
+                <div class="bg-white/95 rounded-2xl p-3.5 border border-orange-200/70 shadow-sm space-y-2.5">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                        <div>
+                            <div class="text-xs font-extrabold text-slate-800">${escapeHtml(item.title)}</div>
+                            ${item.notes ? `<div class="text-[11px] text-slate-500 mt-0.5">${escapeHtml(item.notes)}</div>` : ''}
+                        </div>
+                        <button onclick="discardInboxItem(${idx})" title="Excluir da Life OS Inbox" class="self-start sm:self-auto text-[11px] font-bold text-slate-400 hover:text-rose-600 px-2 py-1 rounded-lg hover:bg-rose-50 transition">
+                            ✕ Descartar
+                        </button>
+                    </div>
+                    <div class="grid grid-cols-1 sm:grid-cols-12 gap-2 items-center">
+                        <select id="inbox-pilar-${idx}" class="sm:col-span-3 bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-1.5 text-[11px] font-semibold text-slate-700 focus:outline-none focus:border-[#FF6B00]">
+                            ${pillarOpts}
+                        </select>
+                        <select id="inbox-prio-${idx}" class="sm:col-span-2 bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-1.5 text-[11px] font-semibold text-slate-700 focus:outline-none focus:border-[#FF6B00]">
+                            <option value="ALTA">🔴 Alta</option>
+                            <option value="MEDIA" selected>🟡 Média</option>
+                            <option value="BAIXA">🟢 Baixa</option>
+                        </select>
+                        <input type="date" id="inbox-date-${idx}" value="${dueIso}" class="sm:col-span-2 bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-1.5 text-[11px] font-semibold text-slate-700 focus:outline-none focus:border-[#FF6B00]">
+                        <select id="inbox-plan-${idx}" class="sm:col-span-3 bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-1.5 text-[11px] font-semibold text-slate-700 focus:outline-none focus:border-[#FF6B00]">
+                            ${planOpts}
+                        </select>
+                        <button id="inbox-import-btn-${idx}" onclick="importInboxItem(${idx})" class="sm:col-span-2 bg-emerald-600 hover:bg-emerald-700 disabled:bg-slate-400 text-white px-3 py-1.5 rounded-xl text-[11px] font-bold transition shadow-sm">
+                            ✓ Importar
+                        </button>
+                    </div>
+                </div>`;
+            }).join('');
+        }
+
+        async function importInboxItem(idx) {
+            const item = inboxItems[idx];
+            if (!item) return;
+
+            const btn = document.getElementById(`inbox-import-btn-${idx}`);
+            if (btn) { btn.disabled = true; btn.textContent = 'Importando...'; }
+
+            const pilar = document.getElementById(`inbox-pilar-${idx}`)?.value || 'CAR';
+            const priority = document.getElementById(`inbox-prio-${idx}`)?.value || 'MEDIA';
+            const dueDate = document.getElementById(`inbox-date-${idx}`)?.value || '';
+            const planVal = document.getElementById(`inbox-plan-${idx}`)?.value || '';
+            const planId = planVal ? Number(planVal) : null;
+
+            try {
+                const newTask = {
+                    id: Date.now(),
+                    pilar,
+                    planId,
+                    priority,
+                    dueDate,
+                    texto: item.title.trim(),
+                    concluida: false,
+                    googleTaskId: null,
+                    isRecurring: false,
+                    frequency: 'none',
+                    recurrenceEndDate: ''
+                };
+
+                if (isTokenValid()) {
+                    newTask.googleTaskId = await pushTaskToGoogle(newTask);
+                    // Remove da Life OS Inbox após importar com sucesso para manter Zero Inbox
+                    if (inboxListId) {
+                        await fetch(`https://tasks.googleapis.com/tasks/v1/lists/${inboxListId}/tasks/${item.id}`, {
+                            method: 'DELETE',
+                            headers: { 'Authorization': `Bearer ${accessToken}` }
+                        });
+                    }
+                }
+
+                state.tasks.unshift(newTask);
+                inboxItems.splice(idx, 1);
+
+                saveState();
+                renderInbox();
+                renderTasks();
+                renderPlanos();
+                showToast('✅ Tarefa triada da Inbox e sincronizada com o LifeOS!');
+            } catch (err) {
+                console.error(err);
+                showToast('Erro ao importar tarefa da Inbox.', true);
+                if (btn) { btn.disabled = false; btn.textContent = '✓ Importar'; }
+            }
+        }
+
+        async function discardInboxItem(idx) {
+            const item = inboxItems[idx];
+            if (!item) return;
+
+            try {
+                if (isTokenValid() && inboxListId) {
+                    const res = await fetch(`https://tasks.googleapis.com/tasks/v1/lists/${inboxListId}/tasks/${item.id}`, {
+                        method: 'DELETE',
+                        headers: { 'Authorization': `Bearer ${accessToken}` }
+                    });
+                    if (res.status === 401) { handleExpiredToken(); return; }
+                }
+                inboxItems.splice(idx, 1);
+                renderInbox();
+                showToast('Item descartado da Life OS Inbox.');
+            } catch (err) {
+                showToast('Erro ao descartar item da Inbox.', true);
+            }
+        }
+
+        // --- GOOGLE TASKS SYNC (@default) ---
+        function buildTaskNotes(taskObj) {
             const linkedPlan = state.planos.find(p => Number(p.id) === Number(taskObj.planId));
             const prioLabel = PRIORITY_STYLES[taskObj.priority]?.label || 'Média';
             let notesParts = [`Prioridade: ${prioLabel}`];
-            if (taskObj.isRecurring) {
+            if (taskObj.isRecurring && taskObj.frequency && taskObj.frequency !== 'none') {
                 notesParts.push(`Recorrência: ${taskObj.frequency}`);
             }
             if (linkedPlan) {
                 notesParts.push(`Plano de Ação: ${linkedPlan.titulo}`);
             }
+            return notesParts.join(' | ');
+        }
+
+        async function pushTaskToGoogle(taskObj) {
+            if (!isTokenValid()) return null;
 
             const payload = {
                 title: `[${taskObj.pilar}] ${taskObj.texto}`,
-                notes: notesParts.join(' | ')
+                notes: buildTaskNotes(taskObj)
             };
             if (taskObj.dueDate) {
                 payload.due = toGoogleTasksRFC3339(taskObj.dueDate);
@@ -747,11 +1116,10 @@
             if (!isTokenValid() || !taskObj.googleTaskId) return;
             try {
                 const payload = {
-                    title: `[${taskObj.pilar}] ${taskObj.texto}`
+                    title: `[${taskObj.pilar}] ${taskObj.texto}`,
+                    notes: buildTaskNotes(taskObj),
+                    due: taskObj.dueDate ? toGoogleTasksRFC3339(taskObj.dueDate) : null
                 };
-                if (taskObj.dueDate) {
-                    payload.due = toGoogleTasksRFC3339(taskObj.dueDate);
-                }
                 const res = await fetch(`https://tasks.googleapis.com/tasks/v1/lists/@default/tasks/${taskObj.googleTaskId}`, {
                     method: 'PATCH',
                     headers: {
@@ -830,6 +1198,7 @@
                 saveState();
                 renderTasks();
                 renderPlanos();
+                await fetchInboxTasks(false);
                 showToast(`Google Tasks sincronizado: ${updatedCount} atualizada(s), ${deletedCount} removida(s).`);
             } catch (e) {
                 showToast('Erro ao sincronizar com Google Tasks.', true);
@@ -841,6 +1210,7 @@
             }
         }
 
+        // --- RODA DA VIDA ---
         let radarChartInstance = null;
         function renderSliders() {
             const container = document.getElementById('sliders-container');
@@ -941,6 +1311,7 @@
             }
         }
 
+        // --- PLANOS DE AÇÃO ---
         function calculatePlanProgress(planId) {
             const linkedTasks = state.tasks.filter(t => Number(t.planId) === Number(planId));
             if (linkedTasks.length === 0) return { percent: 0, done: 0, total: 0 };
@@ -980,7 +1351,7 @@
                                 <button onclick="deletePlan(${pl.id})" title="Excluir Plano" class="text-slate-400 hover:text-rose-600 text-xs font-bold px-2 py-0.5 rounded-lg hover:bg-rose-50 transition">✕ Excluir</button>
                             </div>
                         </div>
-                        <h3 class="text-sm font-extrabold text-slate-800 mt-2.5">${pl.titulo}</h3>
+                        <h3 class="text-sm font-extrabold text-slate-800 mt-2.5">${escapeHtml(pl.titulo)}</h3>
                         <p class="text-[11px] text-slate-500 mt-1">
                             ${stats.total > 0 ? `${stats.done} de ${stats.total} tarefa(s) vinculada(s) concluída(s)` : 'Nenhuma tarefa vinculada ainda'}
                         </p>
@@ -1016,6 +1387,7 @@
             saveState();
             renderPlanos();
             populatePlanDropdown();
+            renderInbox();
             showToast('✅ Plano de ação adicionado!');
         }
 
@@ -1032,6 +1404,7 @@
                 renderPlanos();
                 populatePlanDropdown();
                 renderTasks();
+                renderInbox();
                 showToast('✅ Plano de ação atualizado!');
             }
         }
@@ -1045,6 +1418,7 @@
             renderPlanos();
             renderTasks();
             populatePlanDropdown();
+            renderInbox();
             showToast('Plano de ação excluído.');
         }
 
@@ -1063,17 +1437,23 @@
 
         function setTaskViewMode(mode) {
             taskViewMode = mode;
+            const activeClass = "px-3 py-1.5 rounded-lg text-xs font-bold transition bg-white text-slate-800 shadow-sm";
+            const inactiveClass = "px-3 py-1.5 rounded-lg text-xs font-bold transition text-slate-600 hover:text-slate-900";
+
             const btnCards = document.getElementById('view-btn-cards');
             const btnTable = document.getElementById('view-btn-table');
-            if (btnCards && btnTable) {
-                if (mode === 'cards') {
-                    btnCards.className = "px-3 py-1.5 rounded-lg text-xs font-bold transition bg-white text-slate-800 shadow-sm";
-                    btnTable.className = "px-3 py-1.5 rounded-lg text-xs font-bold transition text-slate-600 hover:text-slate-900";
-                } else {
-                    btnTable.className = "px-3 py-1.5 rounded-lg text-xs font-bold transition bg-white text-slate-800 shadow-sm";
-                    btnCards.className = "px-3 py-1.5 rounded-lg text-xs font-bold transition text-slate-600 hover:text-slate-900";
-                }
-            }
+            const btnWeek = document.getElementById('view-btn-week');
+
+            if (btnCards) btnCards.className = mode === 'cards' ? activeClass : inactiveClass;
+            if (btnTable) btnTable.className = mode === 'table' ? activeClass : inactiveClass;
+            if (btnWeek) btnWeek.className = mode === 'week' ? activeClass : inactiveClass;
+
+            renderTasks();
+        }
+
+        function changeWeek(delta) {
+            if (delta === 0) currentWeekOffset = 0;
+            else currentWeekOffset += delta;
             renderTasks();
         }
 
@@ -1119,6 +1499,146 @@
             });
         }
 
+        // --- MODAL DE EDIÇÃO / CRIAÇÃO COMPLETA ---
+        function populateModalSelects(selectedPilar, selectedPlanId) {
+            const pilarSel = document.getElementById('modal-task-pilar');
+            const planSel = document.getElementById('modal-task-plan');
+            if (pilarSel) {
+                pilarSel.innerHTML = state.pilares.map(p => `<option value="${p.id}" ${p.id === selectedPilar ? 'selected' : ''}>[${p.id}] ${p.nome}</option>`).join('');
+            }
+            if (planSel) {
+                planSel.innerHTML = `<option value="">Sem plano vinculado</option>` +
+                    state.planos.map(pl => `<option value="${pl.id}" ${Number(pl.id) === Number(selectedPlanId) ? 'selected' : ''}>[${pl.pilar}] ${escapeHtml(pl.titulo)}</option>`).join('');
+            }
+        }
+
+        function openEditTaskModal(id) {
+            const task = state.tasks.find(t => Number(t.id) === Number(id));
+            if (!task) return;
+
+            document.getElementById('modal-task-heading').textContent = 'Editar Tarefa';
+            document.getElementById('modal-save-btn').textContent = 'Salvar Alterações';
+            document.getElementById('modal-task-id').value = task.id;
+            document.getElementById('modal-task-texto').value = task.texto || '';
+            document.getElementById('modal-task-priority').value = task.priority || 'MEDIA';
+            document.getElementById('modal-task-duedate').value = task.dueDate || '';
+            populateModalSelects(task.pilar || 'CAR', task.planId);
+
+            const recCheck = document.getElementById('modal-task-recurring');
+            const recOpts = document.getElementById('modal-recurring-options');
+            recCheck.checked = Boolean(task.isRecurring);
+            document.getElementById('modal-task-frequency').value = (task.frequency && task.frequency !== 'none') ? task.frequency : 'semanal';
+            document.getElementById('modal-task-rec-end').value = task.recurrenceEndDate || '';
+
+            if (recCheck.checked) recOpts.classList.remove('hidden');
+            else recOpts.classList.add('hidden');
+
+            const modal = document.getElementById('task-modal');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            setTimeout(() => document.getElementById('modal-task-texto')?.focus(), 50);
+        }
+
+        function openNewTaskModal(presetDate = '') {
+            document.getElementById('modal-task-heading').textContent = presetDate ? `Nova Tarefa (${formatDateBR(presetDate)})` : 'Nova Tarefa';
+            document.getElementById('modal-save-btn').textContent = '+ Criar Tarefa';
+            document.getElementById('modal-task-id').value = '';
+            document.getElementById('modal-task-texto').value = '';
+            document.getElementById('modal-task-priority').value = 'MEDIA';
+            document.getElementById('modal-task-duedate').value = presetDate || '';
+            populateModalSelects('CAR', null);
+
+            document.getElementById('modal-task-recurring').checked = false;
+            document.getElementById('modal-recurring-options').classList.add('hidden');
+            document.getElementById('modal-task-frequency').value = 'semanal';
+            document.getElementById('modal-task-rec-end').value = '';
+
+            const modal = document.getElementById('task-modal');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            setTimeout(() => document.getElementById('modal-task-texto')?.focus(), 50);
+        }
+
+        function closeTaskModal() {
+            const modal = document.getElementById('task-modal');
+            if (!modal) return;
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        }
+
+        async function saveTaskModal() {
+            const idVal = document.getElementById('modal-task-id').value;
+            const texto = document.getElementById('modal-task-texto').value.trim();
+            const pilar = document.getElementById('modal-task-pilar').value;
+            const priority = document.getElementById('modal-task-priority').value;
+            const dueDate = document.getElementById('modal-task-duedate').value || '';
+            const planVal = document.getElementById('modal-task-plan').value;
+            const planId = planVal ? Number(planVal) : null;
+            const isRecurring = document.getElementById('modal-task-recurring').checked;
+            const frequency = isRecurring ? document.getElementById('modal-task-frequency').value : 'none';
+            const recurrenceEndDate = isRecurring ? (document.getElementById('modal-task-rec-end').value || '') : '';
+
+            if (!texto) {
+                showToast('Escreva a descrição da tarefa!', true);
+                return;
+            }
+
+            if (idVal) {
+                const task = state.tasks.find(t => Number(t.id) === Number(idVal));
+                if (!task) return;
+                task.texto = texto;
+                task.pilar = pilar;
+                task.priority = priority;
+                task.dueDate = dueDate;
+                task.planId = planId;
+                task.isRecurring = isRecurring;
+                task.frequency = frequency;
+                task.recurrenceEndDate = recurrenceEndDate;
+
+                saveState();
+                renderTasks();
+                renderPlanos();
+                closeTaskModal();
+
+                if (task.googleTaskId && isTokenValid()) {
+                    await updateTaskDetailsInGoogle(task);
+                }
+                showToast('✅ Tarefa atualizada!');
+            } else {
+                const newTask = {
+                    id: Date.now(),
+                    pilar,
+                    planId,
+                    priority,
+                    dueDate,
+                    texto,
+                    concluida: false,
+                    googleTaskId: null,
+                    isRecurring,
+                    frequency,
+                    recurrenceEndDate
+                };
+                state.tasks.unshift(newTask);
+                saveState();
+                renderTasks();
+                renderPlanos();
+                closeTaskModal();
+
+                if (isTokenValid()) {
+                    pushTaskToGoogle(newTask).then(gId => {
+                        newTask.googleTaskId = gId;
+                        saveState();
+                    }).catch(() => {});
+                }
+                showToast('✅ Tarefa criada!');
+            }
+        }
+
+        function editTask(id) {
+            openEditTaskModal(id);
+        }
+
+        // --- RENDERIZAÇÃO DOS CARDS ---
         function renderTaskCardHTML(t) {
             const linkedPlan = state.planos.find(p => Number(p.id) === Number(t.planId));
             const prio = PRIORITY_STYLES[t.priority] || PRIORITY_STYLES.MEDIA;
@@ -1143,7 +1663,7 @@
                     <button onclick="toggleTask(${t.id})" class="text-xs px-3.5 py-1.5 rounded-xl font-bold transition ${t.concluida ? 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200' : 'bg-slate-100 hover:bg-slate-200 text-slate-700'}">
                         ${t.concluida ? 'Reabrir ↺' : 'Concluir ✓'}
                     </button>
-                    <button onclick="editTask(${t.id})" title="Editar Tarefa" class="text-xs px-2.5 py-1.5 rounded-xl font-bold text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 transition">
+                    <button onclick="openEditTaskModal(${t.id})" title="Editar Tarefa" class="text-xs px-2.5 py-1.5 rounded-xl font-bold text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 transition">
                         ✏️
                     </button>
                     <button onclick="deleteTask(${t.id})" title="Excluir Tarefa" class="text-xs px-2.5 py-1.5 rounded-xl font-bold text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition">
@@ -1153,6 +1673,7 @@
             </div>`;
         }
 
+        // --- RENDERIZAÇÃO DA TABELA EXCEL ---
         function renderExcelTableHTML(activeTasks) {
             const pillarOptions = state.pilares.map(p => `<option value="${p.id}">[${p.id}] ${p.nome}</option>`).join('');
             const planOptions = `<option value="">Sem plano</option>` + state.planos.map(pl => `<option value="${pl.id}">[${pl.pilar}] ${escapeHtml(pl.titulo)}</option>`).join('');
@@ -1211,7 +1732,6 @@
                         </tr>
                     </thead>
                     <tbody>
-                        <!-- Linha Fixa de Cadastro Rápido estilo Planilha -->
                         <tr class="bg-orange-50/60">
                             <td class="text-center px-2 py-1 font-extrabold text-[#FF6B00] text-sm">+</td>
                             <td class="p-0">
@@ -1247,6 +1767,108 @@
             </div>`;
         }
 
+        // --- RENDERIZAÇÃO DO CALENDÁRIO SEMANAL (SEG A DOM) ---
+        function renderWeeklyCalendarHTML(pendingTasks) {
+            const todayIso = getLocalISODate();
+            const now = new Date();
+            const dayOfWeek = now.getDay(); // 0=Dom, 1=Seg...
+            const diffToMonday = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
+
+            const monday = new Date(now.getFullYear(), now.getMonth(), now.getDate() + diffToMonday + (currentWeekOffset * 7));
+            const dayNames = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom'];
+
+            const weekDays = Array.from({ length: 7 }, (_, i) => {
+                const d = new Date(monday.getFullYear(), monday.getMonth(), monday.getDate() + i);
+                return {
+                    label: dayNames[i],
+                    iso: getLocalISODate(d),
+                    shortDate: `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}`
+                };
+            });
+
+            const weekStartIso = weekDays[0].iso;
+            const weekEndIso = weekDays[6].iso;
+
+            const overdueOutside = pendingTasks.filter(t => t.dueDate && t.dueDate < weekStartIso);
+            const undatedTasks = pendingTasks.filter(t => !t.dueDate);
+
+            const columnsHTML = weekDays.map(day => {
+                const isToday = day.iso === todayIso;
+                const dayTasks = pendingTasks.filter(t => t.dueDate === day.iso);
+
+                const itemsHTML = dayTasks.map(t => {
+                    const prio = PRIORITY_STYLES[t.priority] || PRIORITY_STYLES.MEDIA;
+                    return `
+                    <div class="bg-white rounded-xl p-2.5 border border-slate-200/90 shadow-sm hover:border-orange-300 transition space-y-1.5">
+                        <div class="flex items-center justify-between gap-1">
+                            <span class="text-[9px] px-1.5 py-0.5 rounded font-extrabold ${PILLAR_COLORS[t.pilar] || 'bg-slate-100'}">[${t.pilar}]</span>
+                            <div class="flex items-center gap-1">
+                                <span class="text-[10px]" title="Prioridade ${prio.label}">${prio.dot}</span>
+                                <button onclick="toggleTask(${t.id})" title="Concluir" class="text-[10px] bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-bold px-1.5 py-0.5 rounded-md">✓</button>
+                            </div>
+                        </div>
+                        <button onclick="openEditTaskModal(${t.id})" class="block w-full text-left text-[11px] font-bold text-slate-800 hover:text-[#FF6B00] leading-snug">
+                            ${t.isRecurring ? '🔄 ' : ''}${escapeHtml(t.texto)}
+                        </button>
+                    </div>`;
+                }).join('');
+
+                return `
+                <div class="rounded-2xl p-3 flex flex-col min-h-[210px] border transition ${isToday ? 'bg-orange-50/70 border-[#FF6B00] shadow-md shadow-orange-500/10' : 'bg-white/75 border-slate-200/80'}">
+                    <div class="flex items-center justify-between pb-2 mb-2 border-b ${isToday ? 'border-orange-200' : 'border-slate-100'}">
+                        <div>
+                            <span class="text-[11px] font-extrabold uppercase ${isToday ? 'text-[#FF6B00]' : 'text-slate-500'}">${day.label}</span>
+                            <span class="text-xs font-extrabold ml-1 ${isToday ? 'text-slate-900' : 'text-slate-700'}">${day.shortDate}</span>
+                            ${isToday ? '<span class="ml-1 text-[9px] bg-[#FF6B00] text-white px-1.5 py-0.5 rounded-full font-bold">HOJE</span>' : ''}
+                        </div>
+                        <button onclick="openNewTaskModal('${day.iso}')" title="Adicionar tarefa em ${day.shortDate}" class="w-6 h-6 rounded-lg bg-slate-100 hover:bg-[#FF6B00] hover:text-white text-slate-600 font-extrabold text-xs flex items-center justify-center transition">+</button>
+                    </div>
+                    <div class="space-y-2 flex-1">
+                        ${itemsHTML || '<p class="text-[10px] text-slate-400 italic text-center pt-6">Livre</p>'}
+                    </div>
+                </div>`;
+            }).join('');
+
+            const extraChip = (t, isLate) => `
+                <div class="inline-flex items-center gap-1.5 bg-white border ${isLate ? 'border-rose-200' : 'border-slate-200'} rounded-xl px-2.5 py-1.5 text-[11px] shadow-sm">
+                    <span class="px-1.5 py-0.5 rounded text-[9px] font-extrabold ${PILLAR_COLORS[t.pilar] || 'bg-slate-100'}">[${t.pilar}]</span>
+                    <button onclick="openEditTaskModal(${t.id})" class="font-bold text-slate-700 hover:text-[#FF6B00]">${escapeHtml(t.texto)}</button>
+                    ${t.dueDate ? `<span class="text-[10px] font-bold text-rose-600">(${formatDateBR(t.dueDate)})</span>` : ''}
+                    <button onclick="toggleTask(${t.id})" title="Concluir" class="text-emerald-600 hover:bg-emerald-50 font-extrabold px-1 rounded">✓</button>
+                </div>`;
+
+            return `
+            <div class="glass-card p-5 rounded-3xl space-y-4">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                    <div>
+                        <h3 class="text-sm font-extrabold text-slate-800">📅 Semana: ${formatDateBR(weekStartIso)} a ${formatDateBR(weekEndIso)}</h3>
+                        <p class="text-[11px] text-slate-500">Clique em uma tarefa para editar ou no botão <strong>+</strong> do dia para agendar.</p>
+                    </div>
+                    <div class="flex items-center gap-1.5 self-start sm:self-auto">
+                        <button onclick="changeWeek(-1)" class="bg-white hover:bg-slate-100 border border-slate-200 text-slate-700 px-3 py-1.5 rounded-xl text-xs font-bold transition">◀ Anterior</button>
+                        <button onclick="changeWeek(0)" class="bg-orange-100 hover:bg-orange-200 text-[#FF6B00] px-3 py-1.5 rounded-xl text-xs font-bold transition">Hoje</button>
+                        <button onclick="changeWeek(1)" class="bg-white hover:bg-slate-100 border border-slate-200 text-slate-700 px-3 py-1.5 rounded-xl text-xs font-bold transition">Próxima ▶</button>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-7 gap-2.5">
+                    ${columnsHTML}
+                </div>
+
+                ${overdueOutside.length > 0 ? `
+                <div class="bg-rose-50/70 border border-rose-200/80 rounded-2xl p-3.5">
+                    <div class="text-[11px] font-extrabold text-rose-700 mb-2">⚠️ Atrasadas de semanas anteriores (${overdueOutside.length})</div>
+                    <div class="flex flex-wrap gap-2">${overdueOutside.map(t => extraChip(t, true)).join('')}</div>
+                </div>` : ''}
+
+                ${undatedTasks.length > 0 ? `
+                <div class="bg-slate-50/80 border border-slate-200/80 rounded-2xl p-3.5">
+                    <div class="text-[11px] font-extrabold text-slate-600 mb-2">📌 Sem data definida (${undatedTasks.length}) — clique para agendar</div>
+                    <div class="flex flex-wrap gap-2">${undatedTasks.map(t => extraChip(t, false)).join('')}</div>
+                </div>` : ''}
+            </div>`;
+        }
+
         function renderTasks() {
             const activeContainer = document.getElementById('tasks-active-container');
             const completedWrapper = document.getElementById('completed-tasks-wrapper');
@@ -1258,9 +1880,10 @@
             const pendingTasks = sortTasksList(state.tasks.filter(t => !t.concluida));
             const completedTasks = sortTasksList(state.tasks.filter(t => t.concluida));
 
-            // Renderiza tarefas ativas conforme modo selecionado (Cards vs Tabela Excel)
             if (taskViewMode === 'table') {
                 activeContainer.innerHTML = renderExcelTableHTML(pendingTasks);
+            } else if (taskViewMode === 'week') {
+                activeContainer.innerHTML = renderWeeklyCalendarHTML(pendingTasks);
             } else {
                 if (pendingTasks.length === 0) {
                     activeContainer.innerHTML = `<div class="glass-card p-8 rounded-3xl text-center text-xs text-slate-500">Nenhuma tarefa pendente no momento! 🎉</div>`;
@@ -1269,7 +1892,6 @@
                 }
             }
 
-            // Renderiza seção recolhível de tarefas concluídas
             if (completedWrapper && completedContainer && completedBadge) {
                 if (completedTasks.length === 0) {
                     completedWrapper.classList.add('hidden');
@@ -1301,7 +1923,7 @@
             renderTasks();
             renderPlanos();
 
-            if (task.googleTaskId && isTokenValid() && (field === 'texto' || field === 'pilar' || field === 'dueDate')) {
+            if (task.googleTaskId && isTokenValid()) {
                 await updateTaskDetailsInGoogle(task);
             }
             showToast('✅ Planilha atualizada!');
@@ -1430,34 +2052,14 @@
             }
         }
 
-        function editTask(id) {
-            const task = state.tasks.find(t => Number(t.id) === Number(id));
-            if (!task) return;
-            const newText = prompt("Editar descrição da tarefa:", task.texto);
-            if (newText === null) return;
-            const newDueDate = prompt("Editar prazo (AAAA-MM-DD):", task.dueDate || "");
-            if (newText.trim()) {
-                task.texto = newText.trim();
-                task.dueDate = newDueDate ? newDueDate.trim() : "";
-                saveState();
-                renderTasks();
-                renderPlanos();
-                if (task.googleTaskId && isTokenValid()) {
-                    updateTaskDetailsInGoogle(task);
-                }
-                showToast('✅ Tarefa atualizada!');
-            }
-        }
-
         async function toggleTask(id) {
             const task = state.tasks.find(t => t.id === id);
             if (!task) return;
 
             task.concluida = !task.concluida;
 
-            // Se for recorrente e foi marcada como concluída, gera a próxima ocorrência
             if (task.concluida && task.isRecurring && task.frequency && task.frequency !== 'none') {
-                const baseDate = task.dueDate || new Date().toISOString().split('T')[0];
+                const baseDate = task.dueDate || getLocalISODate();
                 const nextDate = getNextDueDate(baseDate, task.frequency);
 
                 let shouldRepeat = true;
@@ -1486,7 +2088,7 @@
                         pushTaskToGoogle(nextTask).then(gId => {
                             nextTask.googleTaskId = gId;
                             saveState();
-                        });
+                        }).catch(() => {});
                     }
                     showToast('🔄 Tarefa recorrente concluída! Próxima data gerada.');
                 }
@@ -1525,6 +2127,7 @@
             }
         }
 
+        // --- HÁBITOS ---
         function renderHabitos() {
             const container = document.getElementById('habits-table-container');
             if (!container) return;
@@ -1618,6 +2221,7 @@
                 renderPlanos();
                 populatePlanDropdown();
                 renderTasks();
+                renderInbox();
                 renderHabitos();
                 updateHeaderStats();
             } catch (err) {
