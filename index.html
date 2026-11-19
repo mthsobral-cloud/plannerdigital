@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>LifeOS — Bullet Journal & Roda da Vida</title>
     
-    <meta name="theme-color" content="#FF6B00">
+    <meta name="theme-color" content="#FFB3BA">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="apple-mobile-web-app-title" content="LifeOS">
@@ -15,17 +15,56 @@
     <script src="https://accounts.google.com/gsi/client" async defer></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+        :root {
+            --pastel-pink: #FFB3BA;
+            --pastel-peach: #FFDFBA;
+            --pastel-yellow: #FFFFBA;
+            --pastel-mint: #BAFFC9;
+            --pastel-blue: #BAE1FF;
+        }
         body {
             font-family: 'Plus Jakarta Sans', sans-serif;
-            background: linear-gradient(135deg, #F8FAFC 0%, #FFF7ED 50%, #F3E8FF 100%);
+            background-color: #FDFCF9;
+            background-image:
+                radial-gradient(circle at 8% 12%, rgba(255, 179, 186, 0.16) 0%, transparent 32%),
+                radial-gradient(circle at 92% 18%, rgba(186, 225, 255, 0.22) 0%, transparent 34%),
+                radial-gradient(circle at 50% 95%, rgba(186, 255, 201, 0.16) 0%, transparent 40%);
             color: #1E293B;
             -webkit-tap-highlight-color: transparent;
         }
-        .glass-card {
-            background: rgba(255, 255, 255, 0.88);
-            backdrop-filter: blur(12px);
-            border: 1px solid rgba(226, 232, 240, 0.9);
-            box-shadow: 0 4px 20px -2px rgba(15, 23, 42, 0.04);
+        .rainbow-ribbon {
+            background: linear-gradient(90deg, #FFB3BA 0%, #FFDFBA 25%, #FFFFBA 50%, #BAFFC9 75%, #BAE1FF 100%);
+        }
+        .paper-card {
+            background: rgba(255, 255, 255, 0.92);
+            backdrop-filter: blur(10px);
+            border: 1px solid #EAE6DF;
+            box-shadow: 0 4px 18px -4px rgba(30, 41, 59, 0.05);
+        }
+        .planner-tab {
+            border-top-left-radius: 14px;
+            border-top-right-radius: 14px;
+            border-bottom-left-radius: 10px;
+            border-bottom-right-radius: 10px;
+            border: 1px solid rgba(30, 41, 59, 0.08);
+            transition: all 0.2s ease;
+        }
+        .planner-tab.tab-inactive {
+            opacity: 0.68;
+            transform: translateY(1px);
+        }
+        .planner-tab.tab-inactive:hover {
+            opacity: 0.95;
+            transform: translateY(0);
+        }
+        .planner-tab.tab-active {
+            opacity: 1;
+            box-shadow: 0 4px 12px -2px rgba(30, 41, 59, 0.10);
+            border-color: rgba(30, 41, 59, 0.18);
+            transform: translateY(-1px);
+        }
+        .progress-rainbow {
+            background: linear-gradient(90deg, #FFB3BA 0%, #FFDFBA 35%, #BAFFC9 70%, #BAE1FF 100%);
         }
         .toast {
             transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
@@ -37,7 +76,7 @@
             opacity: 1;
         }
         .excel-table th, .excel-table td {
-            border: 1px solid #E2E8F0;
+            border: 1px solid #E7E3DC;
         }
         .excel-input {
             width: 100%;
@@ -48,100 +87,107 @@
             transition: background 0.15s;
         }
         .excel-input:focus {
-            background: #FFF7ED;
-            box-shadow: inset 0 0 0 1.5px #FF6B00;
+            background: rgba(186, 225, 255, 0.35);
+            box-shadow: inset 0 0 0 1.5px #60A5FA;
         }
     </style>
 </head>
 <body class="min-h-screen pb-16">
 
+    <!-- Fita Arco-Íris Pastel no Topo -->
+    <div class="rainbow-ribbon h-2 w-full sticky top-0 z-50"></div>
+
     <!-- Toast -->
-    <div id="toast" class="toast fixed bottom-6 right-6 z-50 bg-emerald-600 text-white px-5 py-3.5 rounded-2xl shadow-xl flex items-center gap-3 font-semibold text-xs">
+    <div id="toast" class="toast fixed bottom-6 right-6 z-50 bg-slate-800 text-white px-5 py-3.5 rounded-2xl shadow-xl flex items-center gap-3 font-semibold text-xs">
         <span id="toast-msg">Operação realizada com sucesso!</span>
     </div>
 
     <!-- Modal de Edição / Criação Completa de Tarefa -->
-    <div id="task-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-900/45 backdrop-blur-sm p-4">
-        <div class="bg-white rounded-3xl shadow-2xl border border-slate-200 w-full max-w-lg p-6 space-y-4 max-h-[90vh] overflow-y-auto">
-            <div class="flex items-center justify-between">
-                <h3 id="modal-task-heading" class="text-base font-extrabold text-slate-900">Editar Tarefa</h3>
-                <button onclick="closeTaskModal()" class="text-slate-400 hover:text-slate-700 font-bold text-sm px-2 py-1 rounded-lg hover:bg-slate-100">✕</button>
-            </div>
-
-            <input type="hidden" id="modal-task-id">
-
-            <div class="space-y-3">
-                <div>
-                    <label class="block text-[11px] font-bold text-slate-600 mb-1">Descrição da Tarefa</label>
-                    <input type="text" id="modal-task-texto" placeholder="O que precisa ser feito?" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs font-semibold text-slate-800 focus:outline-none focus:border-[#FF6B00] focus:bg-white">
+    <div id="task-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4">
+        <div class="bg-[#FDFCF9] rounded-3xl shadow-2xl border border-[#EAE6DF] w-full max-w-lg overflow-hidden max-h-[90vh] flex flex-col">
+            <div class="rainbow-ribbon h-1.5 w-full"></div>
+            <div class="p-6 space-y-4 overflow-y-auto">
+                <div class="flex items-center justify-between">
+                    <h3 id="modal-task-heading" class="text-base font-extrabold text-slate-900">Editar Tarefa</h3>
+                    <button onclick="closeTaskModal()" class="text-slate-400 hover:text-slate-700 font-bold text-sm px-2 py-1 rounded-lg hover:bg-slate-100">✕</button>
                 </div>
 
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <div>
-                        <label class="block text-[11px] font-bold text-slate-600 mb-1">Pilar</label>
-                        <select id="modal-task-pilar" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-xs font-semibold text-slate-700 focus:outline-none focus:border-[#FF6B00]"></select>
-                    </div>
-                    <div>
-                        <label class="block text-[11px] font-bold text-slate-600 mb-1">Prioridade</label>
-                        <select id="modal-task-priority" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-xs font-semibold text-slate-700 focus:outline-none focus:border-[#FF6B00]">
-                            <option value="ALTA">🔴 Prioridade Alta</option>
-                            <option value="MEDIA">🟡 Prioridade Média</option>
-                            <option value="BAIXA">🟢 Prioridade Baixa</option>
-                        </select>
-                    </div>
-                </div>
+                <input type="hidden" id="modal-task-id">
 
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div class="space-y-3">
                     <div>
-                        <label class="block text-[11px] font-bold text-slate-600 mb-1">Data de Prazo</label>
-                        <input type="date" id="modal-task-duedate" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-xs font-semibold text-slate-700 focus:outline-none focus:border-[#FF6B00]">
+                        <label class="block text-[11px] font-bold text-slate-600 mb-1">Descrição da Tarefa</label>
+                        <input type="text" id="modal-task-texto" placeholder="O que precisa ser feito?" class="w-full bg-white border border-[#E5E0D8] rounded-xl px-3.5 py-2.5 text-xs font-semibold text-slate-800 focus:outline-none focus:border-sky-400">
                     </div>
-                    <div>
-                        <label class="block text-[11px] font-bold text-slate-600 mb-1">Plano de Ação Vinculado</label>
-                        <select id="modal-task-plan" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-xs font-semibold text-slate-700 focus:outline-none focus:border-[#FF6B00]"></select>
-                    </div>
-                </div>
 
-                <div class="bg-slate-50 p-3.5 rounded-2xl border border-slate-200/80 space-y-2.5">
-                    <label class="flex items-center gap-2 cursor-pointer text-xs font-bold text-slate-700 select-none">
-                        <input type="checkbox" id="modal-task-recurring" onchange="toggleModalRecurring(this)" class="w-4 h-4 accent-[#FF6B00] rounded">
-                        🔄 Tarefa Recorrente
-                    </label>
-                    <div id="modal-recurring-options" class="hidden grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-1">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         <div>
-                            <label class="block text-[10px] font-bold text-slate-500 mb-1">Frequência</label>
-                            <select id="modal-task-frequency" class="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold text-slate-700 focus:outline-none focus:border-[#FF6B00]">
-                                <option value="diaria">Repetição Diária</option>
-                                <option value="semanal">Repetição Semanal</option>
-                                <option value="quinzenal">Repetição Quinzenal</option>
-                                <option value="mensal">Repetição Mensal</option>
+                            <label class="block text-[11px] font-bold text-slate-600 mb-1">Pilar</label>
+                            <select id="modal-task-pilar" class="w-full bg-white border border-[#E5E0D8] rounded-xl px-3 py-2.5 text-xs font-semibold text-slate-700 focus:outline-none focus:border-sky-400"></select>
+                        </div>
+                        <div>
+                            <label class="block text-[11px] font-bold text-slate-600 mb-1">Prioridade</label>
+                            <select id="modal-task-priority" class="w-full bg-white border border-[#E5E0D8] rounded-xl px-3 py-2.5 text-xs font-semibold text-slate-700 focus:outline-none focus:border-sky-400">
+                                <option value="ALTA">🔴 Prioridade Alta</option>
+                                <option value="MEDIA">🟡 Prioridade Média</option>
+                                <option value="BAIXA">🟢 Prioridade Baixa</option>
                             </select>
                         </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         <div>
-                            <label class="block text-[10px] font-bold text-slate-500 mb-1">Repetir até</label>
-                            <input type="date" id="modal-task-rec-end" class="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold text-slate-700 focus:outline-none focus:border-[#FF6B00]">
+                            <label class="block text-[11px] font-bold text-slate-600 mb-1">Data de Prazo</label>
+                            <input type="date" id="modal-task-duedate" class="w-full bg-white border border-[#E5E0D8] rounded-xl px-3 py-2.5 text-xs font-semibold text-slate-700 focus:outline-none focus:border-sky-400">
+                        </div>
+                        <div>
+                            <label class="block text-[11px] font-bold text-slate-600 mb-1">Plano de Ação Vinculado</label>
+                            <select id="modal-task-plan" class="w-full bg-white border border-[#E5E0D8] rounded-xl px-3 py-2.5 text-xs font-semibold text-slate-700 focus:outline-none focus:border-sky-400"></select>
+                        </div>
+                    </div>
+
+                    <div class="bg-[#FFFFBA]/45 p-3.5 rounded-2xl border border-amber-200/70 space-y-2.5">
+                        <label class="flex items-center gap-2 cursor-pointer text-xs font-bold text-slate-700 select-none">
+                            <input type="checkbox" id="modal-task-recurring" onchange="toggleModalRecurring(this)" class="w-4 h-4 accent-slate-800 rounded">
+                            🔄 Tarefa Recorrente
+                        </label>
+                        <div id="modal-recurring-options" class="hidden grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-1">
+                            <div>
+                                <label class="block text-[10px] font-bold text-slate-600 mb-1">Frequência</label>
+                                <select id="modal-task-frequency" class="w-full bg-white border border-[#E5E0D8] rounded-xl px-3 py-2 text-xs font-semibold text-slate-700 focus:outline-none focus:border-sky-400">
+                                    <option value="diaria">Repetição Diária</option>
+                                    <option value="semanal">Repetição Semanal</option>
+                                    <option value="quinzenal">Repetição Quinzenal</option>
+                                    <option value="mensal">Repetição Mensal</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-[10px] font-bold text-slate-600 mb-1">Repetir até</label>
+                                <input type="date" id="modal-task-rec-end" class="w-full bg-white border border-[#E5E0D8] rounded-xl px-3 py-2 text-xs font-semibold text-slate-700 focus:outline-none focus:border-sky-400">
+                            </div>
                         </div>
                     </div>
                 </div>
-            </div>
 
-            <div class="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
-                <button onclick="closeTaskModal()" class="px-4 py-2 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-100 transition">Cancelar</button>
-                <button id="modal-save-btn" onclick="saveTaskModal()" class="px-5 py-2 rounded-xl text-xs font-bold bg-[#FF6B00] hover:bg-orange-600 text-white shadow-md shadow-orange-500/20 transition">Salvar Alterações</button>
+                <div class="flex items-center justify-end gap-2 pt-3 border-t border-[#EAE6DF]">
+                    <button onclick="closeTaskModal()" class="px-4 py-2 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-100 transition">Cancelar</button>
+                    <button id="modal-save-btn" onclick="saveTaskModal()" class="px-5 py-2 rounded-xl text-xs font-bold bg-slate-800 hover:bg-slate-900 text-white shadow-sm transition">Salvar Alterações</button>
+                </div>
             </div>
         </div>
     </div>
 
-    <header class="bg-white/90 backdrop-blur-md border-b border-slate-200/80 sticky top-0 z-40">
+    <!-- Cabeçalho Papelaria Pastel -->
+    <header class="bg-[#FDFCF9]/90 backdrop-blur-md border-b border-[#EAE6DF] sticky top-2 z-40">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 py-4 flex flex-col lg:flex-row justify-between items-center gap-4">
             <div class="flex items-center gap-3.5">
-                <div class="w-11 h-11 rounded-2xl bg-gradient-to-br from-[#FF6B00] to-amber-500 flex items-center justify-center shadow-md shadow-orange-500/20 text-white font-extrabold text-lg tracking-tighter">
+                <div class="w-11 h-11 rounded-2xl flex items-center justify-center shadow-sm border border-[#FFB3BA] font-extrabold text-lg tracking-tighter text-slate-800" style="background: linear-gradient(135deg, #FFB3BA 0%, #FFDFBA 100%);">
                     •×
                 </div>
                 <div>
                     <div class="flex items-center gap-2.5 flex-wrap">
                         <h1 class="text-xl font-extrabold text-slate-900 tracking-tight">LifeOS</h1>
-                        <span class="text-[11px] bg-orange-100 text-[#FF6B00] px-3 py-0.5 rounded-full font-bold">
+                        <span class="text-[11px] px-3 py-0.5 rounded-full font-bold text-slate-800 border border-[#EAE6DF]" style="background: linear-gradient(90deg, rgba(255,179,186,0.55), rgba(255,223,186,0.55), rgba(186,225,255,0.55));">
                             Bullet Journal & Roda da Vida
                         </span>
                     </div>
@@ -151,30 +197,30 @@
                 </div>
             </div>
 
-            <div class="flex items-center gap-2.5 sm:gap-3.5 flex-wrap justify-center">
-                <div class="bg-slate-50 border border-slate-200/80 rounded-2xl px-4 py-2 flex items-center gap-4 sm:gap-5">
+            <div class="flex items-center gap-2.5 sm:gap-3 flex-wrap justify-center">
+                <div class="bg-white border border-[#EAE6DF] rounded-2xl px-4 py-2 flex items-center gap-4 sm:gap-5 shadow-sm">
                     <div>
                         <div class="text-[10px] font-bold uppercase tracking-wider text-slate-400">MÉDIA DA RODA</div>
                         <div class="text-sm font-extrabold text-slate-800" id="header-media">7.0 / 10</div>
                     </div>
-                    <div class="h-7 w-px bg-slate-200"></div>
+                    <div class="h-7 w-px bg-[#EAE6DF]"></div>
                     <div>
                         <div class="text-[10px] font-bold uppercase tracking-wider text-slate-400">TAREFAS</div>
-                        <div class="text-sm font-extrabold text-emerald-600" id="header-concluidas">0 / 0</div>
+                        <div class="text-sm font-extrabold text-emerald-700" id="header-concluidas">0 / 0</div>
                     </div>
-                    <div class="h-7 w-px bg-slate-200"></div>
+                    <div class="h-7 w-px bg-[#EAE6DF]"></div>
                     <div>
                         <div class="text-[10px] font-bold uppercase tracking-wider text-slate-400">NUVEM DRIVE</div>
                         <div class="text-xs font-bold text-slate-500" id="cloud-sync-status">Offline (Local)</div>
                     </div>
                 </div>
 
-                <button id="force-sync-btn" onclick="forceCloudPull()" title="Baixar versão mais recente do Google Drive" class="bg-white hover:bg-slate-100 border border-slate-200 text-slate-700 px-3.5 py-2.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-sm">
+                <button id="force-sync-btn" onclick="forceCloudPull()" title="Baixar versão mais recente do Google Drive" class="bg-white hover:bg-[#FFFFBA]/50 border border-[#EAE6DF] text-slate-700 px-3.5 py-2.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-sm">
                     <span id="force-sync-icon">↻</span>
                     <span>Sincronizar Nuvem</span>
                 </button>
 
-                <button id="google-auth-btn" onclick="handleGoogleAuth()" class="bg-slate-900 hover:bg-slate-800 text-white px-4 py-2.5 rounded-xl text-xs font-bold transition flex items-center gap-2 shadow-sm">
+                <button id="google-auth-btn" onclick="handleGoogleAuth()" class="bg-white hover:bg-slate-50 border border-slate-300 text-slate-800 px-4 py-2.5 rounded-xl text-xs font-bold transition flex items-center gap-2 shadow-sm">
                     <svg class="w-4 h-4" viewBox="0 0 24 24"><path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.665-5.17 3.665-9.17z"/><path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.11-6.72-4.96H1.29v3.14C3.26 21.3 7.31 24 12 24z"/><path fill="#FBBC05" d="M5.28 14.24c-.24-.72-.38-1.49-.38-2.24s.14-1.52.38-2.24V6.62H1.29C.47 8.24 0 10.06 0 12s.47 3.76 1.29 5.38l3.99-3.14z"/><path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.31 0 3.26 2.7 1.29 6.62l3.99 3.14c.95-2.85 3.6-4.96 6.72-4.96z"/></svg>
                     <span id="auth-status-text">Conectar Google</span>
                 </button>
@@ -183,37 +229,38 @@
     </header>
 
     <main class="max-w-7xl mx-auto px-4 sm:px-6 mt-7">
-        <nav class="flex items-center gap-2 overflow-x-auto pb-2">
-            <button onclick="switchTab('roda', this)" class="tab-btn px-5 py-2.5 rounded-xl text-xs font-bold transition whitespace-nowrap bg-[#FF6B00] text-white shadow-md shadow-orange-500/20">
-                Roda da Vida (10 Pilares)
+        <!-- Navegação Estilo Divisórias de Planner Físico -->
+        <nav class="flex items-center gap-2 overflow-x-auto pb-2 border-b border-[#EAE6DF]">
+            <button data-tab="roda" onclick="switchTab('roda', this)" class="tab-btn planner-tab tab-active px-5 py-2.5 text-xs font-extrabold whitespace-nowrap text-slate-900 bg-[#FFB3BA] flex items-center gap-1.5">
+                <span>Roda da Vida (10 Pilares)</span>
             </button>
-            <button onclick="switchTab('planos', this)" class="tab-btn px-5 py-2.5 rounded-xl text-xs font-bold transition whitespace-nowrap text-slate-600 hover:bg-white/80">
-                Planos de Ação
+            <button data-tab="planos" onclick="switchTab('planos', this)" class="tab-btn planner-tab tab-inactive px-5 py-2.5 text-xs font-extrabold whitespace-nowrap text-slate-900 bg-[#FFDFBA] flex items-center gap-1.5">
+                <span>Planos de Ação</span>
             </button>
-            <button onclick="switchTab('bujo', this)" class="tab-btn px-5 py-2.5 rounded-xl text-xs font-bold transition whitespace-nowrap text-slate-600 hover:bg-white/80 flex items-center gap-1.5">
+            <button data-tab="bujo" onclick="switchTab('bujo', this)" class="tab-btn planner-tab tab-inactive px-5 py-2.5 text-xs font-extrabold whitespace-nowrap text-slate-900 bg-[#BAE1FF] flex items-center gap-1.5">
                 <span>Diário & Google Tarefas</span>
-                <span id="nav-inbox-badge" class="hidden bg-rose-500 text-white text-[10px] px-1.5 py-0.2 rounded-full font-extrabold">0</span>
+                <span id="nav-inbox-badge" class="hidden bg-slate-900 text-[#FFFFBA] text-[10px] px-1.5 py-0.2 rounded-full font-extrabold">0</span>
             </button>
-            <button onclick="switchTab('habitos', this)" class="tab-btn px-5 py-2.5 rounded-xl text-xs font-bold transition whitespace-nowrap text-slate-600 hover:bg-white/80">
-                Rastreador de Hábitos
+            <button data-tab="habitos" onclick="switchTab('habitos', this)" class="tab-btn planner-tab tab-inactive px-5 py-2.5 text-xs font-extrabold whitespace-nowrap text-slate-900 bg-[#BAFFC9] flex items-center gap-1.5">
+                <span>Rastreador de Hábitos</span>
             </button>
         </nav>
 
         <!-- ABA 1: RODA DA VIDA -->
         <section id="tab-roda" class="tab-content mt-6">
             <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-                <div class="lg:col-span-5 glass-card p-6 rounded-3xl">
+                <div class="lg:col-span-5 paper-card p-6 rounded-3xl">
                     <div class="flex justify-between items-center mb-1">
                         <h2 class="text-base font-extrabold text-slate-800">Ciclo Semestral (10 Pilares)</h2>
-                        <span class="text-[11px] font-bold bg-purple-100 text-purple-700 px-2.5 py-0.5 rounded-full">6 Meses</span>
+                        <span class="text-[11px] font-bold bg-[#FFB3BA]/60 text-rose-950 px-2.5 py-0.5 rounded-full border border-[#FFB3BA]">6 Meses</span>
                     </div>
                     <p class="text-xs text-slate-500 mb-5">Ajuste sua nota atual e defina a sua Meta Semestral para cada área.</p>
-                    <div id="sliders-container" class="space-y-4 max-h-[520px] overflow-y-auto pr-2"></div>
+                    <div id="sliders-container" class="space-y-3.5 max-h-[520px] overflow-y-auto pr-2"></div>
                 </div>
 
-                <div class="lg:col-span-7 glass-card p-6 rounded-3xl flex flex-col items-center justify-center">
+                <div class="lg:col-span-7 paper-card p-6 rounded-3xl flex flex-col items-center justify-center">
                     <h2 class="text-base font-extrabold text-slate-800 mb-1">Mapa Visual de Equilíbrio</h2>
-                    <p class="text-xs text-slate-500 mb-4">Nota Atual (Laranja) vs. Meta Semestral (Azul)</p>
+                    <p class="text-xs text-slate-500 mb-4">Nota Atual (Rosa Pastel) vs. Meta Semestral (Azul Pastel)</p>
                     <div class="w-full max-w-[460px] aspect-square relative">
                         <canvas id="radarChart"></canvas>
                     </div>
@@ -223,12 +270,12 @@
 
         <!-- ABA 2: PLANOS DE AÇÃO -->
         <section id="tab-planos" class="tab-content mt-6 hidden">
-            <div class="glass-card p-6 rounded-3xl mb-6">
+            <div class="paper-card p-6 rounded-3xl mb-6 border-t-4 border-t-[#FFDFBA]">
                 <h2 class="text-base font-extrabold text-slate-800 mb-1">Criar Novo Plano de Ação</h2>
                 <p class="text-xs text-slate-500 mb-4">Defina metas de 6 meses com prazo limite. Vincule tarefas a estes planos para preencher o progresso automaticamente.</p>
                 
                 <div class="grid grid-cols-1 sm:grid-cols-12 gap-3">
-                    <select id="plan-pillar" class="sm:col-span-2 bg-white border border-slate-200 rounded-xl px-3 py-2.5 text-xs font-semibold text-slate-700 focus:outline-none focus:border-[#FF6B00]">
+                    <select id="plan-pillar" class="sm:col-span-2 bg-[#FDFCF9] border border-[#E5E0D8] rounded-xl px-3 py-2.5 text-xs font-semibold text-slate-700 focus:outline-none focus:border-amber-400">
                         <option value="CAR">[CAR] Carreira</option>
                         <option value="FIN">[FIN] Finanças</option>
                         <option value="SAU">[SAU] Saúde</option>
@@ -240,11 +287,11 @@
                         <option value="LAZ">[LAZ] Lazer</option>
                         <option value="ESP">[ESP] Espirit.</option>
                     </select>
-                    <input type="text" id="plan-title" placeholder="Ex: Concluir entrega final do TCC na UERJ" class="sm:col-span-5 bg-white border border-slate-200 rounded-xl px-4 py-2.5 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-[#FF6B00]">
+                    <input type="text" id="plan-title" placeholder="Ex: Concluir entrega final do TCC na UERJ" class="sm:col-span-5 bg-[#FDFCF9] border border-[#E5E0D8] rounded-xl px-4 py-2.5 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-amber-400">
                     <div class="sm:col-span-3">
-                        <input type="date" id="plan-deadline" title="Prazo final do Plano de Ação" class="w-full bg-white border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs font-semibold text-slate-700 focus:outline-none focus:border-[#FF6B00]">
+                        <input type="date" id="plan-deadline" title="Prazo final do Plano de Ação" class="w-full bg-[#FDFCF9] border border-[#E5E0D8] rounded-xl px-3.5 py-2.5 text-xs font-semibold text-slate-700 focus:outline-none focus:border-amber-400">
                     </div>
-                    <button onclick="addNewPlan()" class="sm:col-span-2 bg-[#FF6B00] hover:bg-orange-600 text-white px-4 py-2.5 rounded-xl text-xs font-bold shadow-md shadow-orange-500/20 transition">
+                    <button onclick="addNewPlan()" class="sm:col-span-2 bg-[#FFDFBA] hover:bg-[#ffd29e] text-slate-900 border border-amber-300/80 px-4 py-2.5 rounded-xl text-xs font-extrabold shadow-sm transition">
                         + Adicionar
                     </button>
                 </div>
@@ -256,52 +303,52 @@
         <!-- ABA 3: DIÁRIO & GOOGLE TAREFAS -->
         <section id="tab-bujo" class="tab-content mt-6 hidden">
 
-            <!-- CAIXA DE ENTRADA (LIFE OS INBOX — LISTA UNIFICADA NO GOOGLE TASKS) -->
-            <div class="glass-card p-5 rounded-3xl mb-6 border-orange-200/80 bg-gradient-to-r from-orange-50/70 via-white/90 to-amber-50/50">
-                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <!-- CAIXA DE ENTRADA (LIFE OS INBOX — ESTILO POST-IT AMARELO PASTEL) -->
+            <div class="paper-card rounded-3xl mb-6 overflow-hidden border-[#EFE5A8]">
+                <div class="bg-[#FFFFBA] px-5 py-3.5 border-b border-[#EFE5A8] flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                     <div class="flex items-center gap-3">
-                        <div class="w-9 h-9 rounded-2xl bg-orange-100 text-[#FF6B00] flex items-center justify-center text-base font-extrabold">
+                        <div class="w-8 h-8 rounded-xl bg-white/80 text-slate-800 flex items-center justify-center text-sm font-extrabold border border-amber-200/80">
                             📥
                         </div>
                         <div>
                             <div class="flex items-center gap-2 flex-wrap">
-                                <h2 class="text-sm font-extrabold text-slate-800">Caixa de Entrada (Life OS Inbox)</h2>
-                                <span id="inbox-count-badge" class="text-[11px] bg-orange-100 text-[#FF6B00] px-2.5 py-0.5 rounded-full font-extrabold">0 para triar</span>
+                                <h2 class="text-sm font-extrabold text-slate-900">Caixa de Entrada (Life OS Inbox)</h2>
+                                <span id="inbox-count-badge" class="text-[11px] bg-white/85 text-slate-800 px-2.5 py-0.5 rounded-full font-extrabold border border-amber-200">0 para triar</span>
                             </div>
-                            <p class="text-[11px] text-slate-500">Todas as tarefas sincronizam unificadas na lista <strong>Life OS Inbox</strong>. Novas capturas feitas fora do app aparecem aqui para triagem.</p>
+                            <p class="text-[11px] text-slate-600">Todas as tarefas sincronizam unificadas na lista <strong>Life OS Inbox</strong>. Novas capturas feitas fora do app aparecem aqui para triagem.</p>
                         </div>
                     </div>
                     <div class="flex items-center gap-2 self-start sm:self-auto">
-                        <button id="btn-fetch-inbox" onclick="fetchInboxTasks(true)" class="bg-[#FF6B00] hover:bg-orange-600 text-white px-3.5 py-2 rounded-xl text-xs font-bold shadow-sm shadow-orange-500/20 transition flex items-center gap-1.5">
+                        <button id="btn-fetch-inbox" onclick="fetchInboxTasks(true)" class="bg-slate-800 hover:bg-slate-900 text-white px-3.5 py-2 rounded-xl text-xs font-bold shadow-sm transition flex items-center gap-1.5">
                             <span>↻ Buscar Inbox</span>
                         </button>
-                        <button onclick="toggleInboxPanel()" id="btn-toggle-inbox" class="bg-white hover:bg-slate-100 border border-slate-200 text-slate-600 px-3 py-2 rounded-xl text-xs font-bold transition">
+                        <button onclick="toggleInboxPanel()" id="btn-toggle-inbox" class="bg-white/90 hover:bg-white border border-amber-200 text-slate-700 px-3 py-2 rounded-xl text-xs font-bold transition">
                             Recolher
                         </button>
                     </div>
                 </div>
 
-                <div id="inbox-list-container" class="mt-4 space-y-2.5">
-                    <p class="text-xs text-slate-500 italic bg-white/70 rounded-2xl p-3.5 border border-slate-200/60">
+                <div id="inbox-list-container" class="p-4 bg-[#FFFFF4] space-y-2.5">
+                    <p class="text-xs text-slate-500 italic bg-white/80 rounded-2xl p-3.5 border border-[#EFE5A8]/70">
                         Conecte sua conta Google e clique em <strong>↻ Buscar Inbox</strong> para carregar novas capturas da lista <strong>Life OS Inbox</strong>.
                     </p>
                 </div>
             </div>
 
             <!-- Formulário de Registro Rápido -->
-            <div class="glass-card p-6 rounded-3xl mb-6">
+            <div class="paper-card p-6 rounded-3xl mb-6 border-t-4 border-t-[#BAE1FF]">
                 <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4">
                     <div>
                         <h2 class="text-base font-extrabold text-slate-800">Registro Rápido & Google Tarefas</h2>
                         <p class="text-xs text-slate-500">Prazo, prioridade, recorrência e conclusão sincronizados na lista <strong>Life OS Inbox</strong>.</p>
                     </div>
-                    <button id="btn-pull-tasks" onclick="pullFromGoogleTasks()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-xl text-xs font-bold transition self-start sm:self-auto">
+                    <button id="btn-pull-tasks" onclick="pullFromGoogleTasks()" class="bg-[#BAE1FF] hover:bg-[#a3d5ff] text-slate-900 border border-sky-300/80 px-4 py-2 rounded-xl text-xs font-extrabold transition self-start sm:self-auto shadow-sm">
                         ↻ Sincronizar Google Tasks
                     </button>
                 </div>
 
                 <div class="grid grid-cols-1 sm:grid-cols-12 gap-3 mb-3">
-                    <select id="task-pillar" class="sm:col-span-3 bg-white border border-slate-200 rounded-xl px-3 py-2.5 text-xs font-semibold text-slate-700 focus:outline-none focus:border-[#FF6B00]">
+                    <select id="task-pillar" class="sm:col-span-3 bg-[#FDFCF9] border border-[#E5E0D8] rounded-xl px-3 py-2.5 text-xs font-semibold text-slate-700 focus:outline-none focus:border-sky-400">
                         <option value="CAR">[CAR] Carreira</option>
                         <option value="FIN">[FIN] Finanças</option>
                         <option value="SAU">[SAU] Saúde</option>
@@ -314,27 +361,27 @@
                         <option value="ESP">[ESP] Espirit.</option>
                     </select>
 
-                    <select id="task-plan-link" class="sm:col-span-4 bg-white border border-slate-200 rounded-xl px-3 py-2.5 text-xs font-semibold text-slate-700 focus:outline-none focus:border-[#FF6B00]">
+                    <select id="task-plan-link" class="sm:col-span-4 bg-[#FDFCF9] border border-[#E5E0D8] rounded-xl px-3 py-2.5 text-xs font-semibold text-slate-700 focus:outline-none focus:border-sky-400">
                         <option value="">Sem plano vinculado</option>
                     </select>
 
-                    <select id="task-priority" title="Prioridade da Tarefa" class="sm:col-span-2 bg-white border border-slate-200 rounded-xl px-3 py-2.5 text-xs font-semibold text-slate-700 focus:outline-none focus:border-[#FF6B00]">
+                    <select id="task-priority" title="Prioridade da Tarefa" class="sm:col-span-2 bg-[#FDFCF9] border border-[#E5E0D8] rounded-xl px-3 py-2.5 text-xs font-semibold text-slate-700 focus:outline-none focus:border-sky-400">
                         <option value="ALTA">🔴 Prioridade Alta</option>
                         <option value="MEDIA" selected>🟡 Prioridade Média</option>
                         <option value="BAIXA">🟢 Prioridade Baixa</option>
                     </select>
 
-                    <input type="date" id="task-due-date" title="Data de Prazo" class="sm:col-span-3 bg-white border border-slate-200 rounded-xl px-3 py-2.5 text-xs font-semibold text-slate-700 focus:outline-none focus:border-[#FF6B00]">
+                    <input type="date" id="task-due-date" title="Data de Prazo" class="sm:col-span-3 bg-[#FDFCF9] border border-[#E5E0D8] rounded-xl px-3 py-2.5 text-xs font-semibold text-slate-700 focus:outline-none focus:border-sky-400">
                 </div>
 
                 <!-- Bloco de Recorrência -->
-                <div class="bg-slate-50/80 p-3 rounded-2xl border border-slate-200/80 mb-3 flex flex-col sm:flex-row sm:items-center gap-3">
+                <div class="bg-[#FDFCF9] p-3 rounded-2xl border border-[#EAE6DF] mb-3 flex flex-col sm:flex-row sm:items-center gap-3">
                     <label class="flex items-center gap-2 cursor-pointer text-xs font-bold text-slate-700 select-none">
-                        <input type="checkbox" id="task-is-recurring" onchange="toggleRecurringOptions(this)" class="w-4 h-4 accent-[#FF6B00] rounded">
+                        <input type="checkbox" id="task-is-recurring" onchange="toggleRecurringOptions(this)" class="w-4 h-4 accent-slate-800 rounded">
                         🔄 Tarefa Recorrente
                     </label>
                     <div id="recurring-options" class="hidden flex items-center gap-3 flex-wrap flex-1">
-                        <select id="task-frequency" class="bg-white border border-slate-200 rounded-xl px-3 py-1.5 text-xs font-semibold text-slate-700 focus:outline-none focus:border-[#FF6B00]">
+                        <select id="task-frequency" class="bg-white border border-[#E5E0D8] rounded-xl px-3 py-1.5 text-xs font-semibold text-slate-700 focus:outline-none focus:border-sky-400">
                             <option value="diaria">Repetição Diária</option>
                             <option value="semanal" selected>Repetição Semanal</option>
                             <option value="quinzenal">Repetição Quinzenal</option>
@@ -342,33 +389,33 @@
                         </select>
                         <div class="flex items-center gap-1.5 text-xs text-slate-600">
                             <span class="font-semibold">Repetir até:</span>
-                            <input type="date" id="task-recurrence-end" class="bg-white border border-slate-200 rounded-xl px-3 py-1.5 text-xs font-semibold text-slate-700 focus:outline-none focus:border-[#FF6B00]">
+                            <input type="date" id="task-recurrence-end" class="bg-white border border-[#E5E0D8] rounded-xl px-3 py-1.5 text-xs font-semibold text-slate-700 focus:outline-none focus:border-sky-400">
                         </div>
                     </div>
                 </div>
 
                 <div class="grid grid-cols-1 sm:grid-cols-12 gap-3">
-                    <input type="text" id="task-input" onkeydown="if(event.key==='Enter') addNewTask()" placeholder="Ex: Revisar referencial teórico do capítulo 2..." class="sm:col-span-9 bg-white border border-slate-200 rounded-xl px-4 py-2.5 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-[#FF6B00]">
+                    <input type="text" id="task-input" onkeydown="if(event.key==='Enter') addNewTask()" placeholder="Ex: Revisar referencial teórico do capítulo 2..." class="sm:col-span-9 bg-[#FDFCF9] border border-[#E5E0D8] rounded-xl px-4 py-2.5 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-sky-400">
 
-                    <button id="btn-sync-task" onclick="addNewTask()" class="sm:col-span-3 bg-slate-900 hover:bg-slate-800 disabled:bg-slate-400 text-white px-4 py-2.5 rounded-xl text-xs font-bold transition flex items-center justify-center gap-2 shadow-sm">
+                    <button id="btn-sync-task" onclick="addNewTask()" class="sm:col-span-3 bg-slate-800 hover:bg-slate-900 disabled:bg-slate-400 text-white px-4 py-2.5 rounded-xl text-xs font-bold transition flex items-center justify-center gap-2 shadow-sm">
                         <span>+ Criar & Sincronizar</span>
                     </button>
                 </div>
             </div>
 
             <!-- Barra de Controle: Ordenação e Alternador Cards vs Tabela Excel vs Calendário Semanal -->
-            <div class="glass-card px-5 py-3.5 rounded-2xl mb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div class="paper-card px-5 py-3.5 rounded-2xl mb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div class="flex items-center gap-3 flex-wrap">
                     <span class="text-xs font-extrabold text-slate-700">Ordenar por:</span>
-                    <select id="task-sort-mode" onchange="changeTaskSort(this.value)" class="bg-white border border-slate-200 rounded-xl px-3 py-1.5 text-xs font-semibold text-slate-700 focus:outline-none focus:border-[#FF6B00]">
+                    <select id="task-sort-mode" onchange="changeTaskSort(this.value)" class="bg-[#FDFCF9] border border-[#E5E0D8] rounded-xl px-3 py-1.5 text-xs font-semibold text-slate-700 focus:outline-none focus:border-sky-400">
                         <option value="date_asc">📅 Data de Prazo (Mais próximas primeiro)</option>
                         <option value="date_desc">📅 Data de Prazo (Mais distantes primeiro)</option>
                         <option value="priority">🔴 Prioridade (Alta → Baixa)</option>
                     </select>
                 </div>
 
-                <div class="flex items-center gap-1.5 bg-slate-100 p-1 rounded-xl self-start sm:self-auto flex-wrap">
-                    <button id="view-btn-cards" onclick="setTaskViewMode('cards')" class="px-3 py-1.5 rounded-lg text-xs font-bold transition bg-white text-slate-800 shadow-sm">
+                <div class="flex items-center gap-1.5 bg-[#F4F1EA] p-1 rounded-xl self-start sm:self-auto flex-wrap border border-[#EAE6DF]">
+                    <button id="view-btn-cards" onclick="setTaskViewMode('cards')" class="px-3 py-1.5 rounded-lg text-xs font-bold transition bg-white text-slate-900 shadow-sm">
                         🗂️ Cards
                     </button>
                     <button id="view-btn-table" onclick="setTaskViewMode('table')" class="px-3 py-1.5 rounded-lg text-xs font-bold transition text-slate-600 hover:text-slate-900">
@@ -385,26 +432,26 @@
 
             <!-- Seção Recolhível de Tarefas Concluídas -->
             <div id="completed-tasks-wrapper" class="mt-6 hidden">
-                <button onclick="toggleCompletedSection()" class="w-full glass-card px-5 py-3.5 rounded-2xl flex items-center justify-between text-left hover:bg-white/95 transition">
+                <button onclick="toggleCompletedSection()" class="w-full paper-card px-5 py-3.5 rounded-2xl flex items-center justify-between text-left hover:bg-[#BAFFC9]/25 transition">
                     <div class="flex items-center gap-2.5">
                         <span id="completed-chevron" class="text-xs font-extrabold text-slate-500 transition-transform duration-200">▶</span>
                         <span class="text-xs font-extrabold text-slate-700">Tarefas Concluídas</span>
-                        <span id="completed-count-badge" class="text-[11px] bg-emerald-100 text-emerald-700 px-2.5 py-0.5 rounded-full font-extrabold">0</span>
+                        <span id="completed-count-badge" class="text-[11px] bg-[#BAFFC9] text-emerald-950 px-2.5 py-0.5 rounded-full font-extrabold border border-emerald-200">0</span>
                     </div>
                     <span id="completed-toggle-label" class="text-[11px] font-bold text-slate-400">Clique para expandir</span>
                 </button>
-                <div id="tasks-completed-container" class="hidden mt-3 space-y-2.5 pl-2 border-l-2 border-emerald-200"></div>
+                <div id="tasks-completed-container" class="hidden mt-3 space-y-2.5 pl-3 border-l-4 border-[#BAFFC9]"></div>
             </div>
         </section>
 
         <!-- ABA 4: RASTREADOR DE HÁBITOS -->
         <section id="tab-habitos" class="tab-content mt-6 hidden">
-            <div class="glass-card p-6 rounded-3xl mb-6">
+            <div class="paper-card p-6 rounded-3xl mb-6 border-t-4 border-t-[#BAFFC9]">
                 <h2 class="text-base font-extrabold text-slate-800 mb-1">Adicionar Novo Hábito Recorrente</h2>
                 <p class="text-xs text-slate-500 mb-4">Acompanhe sua consistência ao longo dos dias do mês.</p>
 
                 <div class="grid grid-cols-1 sm:grid-cols-12 gap-3">
-                    <select id="habit-pillar" class="sm:col-span-3 bg-white border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs font-semibold text-slate-700 focus:outline-none focus:border-[#FF6B00]">
+                    <select id="habit-pillar" class="sm:col-span-3 bg-[#FDFCF9] border border-[#E5E0D8] rounded-xl px-3.5 py-2.5 text-xs font-semibold text-slate-700 focus:outline-none focus:border-emerald-400">
                         <option value="SAU">Saúde [SAU]</option>
                         <option value="INT">Intelectual [INT]</option>
                         <option value="CAR">Carreira [CAR]</option>
@@ -416,14 +463,14 @@
                         <option value="LAZ">Lazer [LAZ]</option>
                         <option value="ESP">Espiritualidade [ESP]</option>
                     </select>
-                    <input type="text" id="habit-name" placeholder="Ex: Treinar 45 min ou Ler 20 páginas" class="sm:col-span-6 bg-white border border-slate-200 rounded-xl px-4 py-2.5 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-[#FF6B00]">
-                    <button onclick="addNewHabit()" class="sm:col-span-3 bg-[#FF6B00] hover:bg-orange-600 text-white px-5 py-2.5 rounded-xl text-xs font-bold shadow-md shadow-orange-500/20 transition">
+                    <input type="text" id="habit-name" placeholder="Ex: Treinar 45 min ou Ler 20 páginas" class="sm:col-span-6 bg-[#FDFCF9] border border-[#E5E0D8] rounded-xl px-4 py-2.5 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-emerald-400">
+                    <button onclick="addNewHabit()" class="sm:col-span-3 bg-[#BAFFC9] hover:bg-[#a1f7b4] text-emerald-950 border border-emerald-300/80 px-5 py-2.5 rounded-xl text-xs font-extrabold shadow-sm transition">
                         + Adicionar Hábito
                     </button>
                 </div>
             </div>
 
-            <div class="glass-card p-6 rounded-3xl overflow-x-auto">
+            <div class="paper-card p-6 rounded-3xl overflow-x-auto">
                 <div class="flex justify-between items-center mb-4">
                     <h3 class="text-sm font-extrabold text-slate-800">Grade de Consistência (Últimos 14 Dias do Mês)</h3>
                     <span class="text-xs text-slate-500">Clique nos quadrados para marcar/desmarcar</span>
@@ -456,24 +503,36 @@
         let showCompletedTasks = false;
         let currentWeekOffset = 0;
 
+        // Etiquetas dos 10 Pilares na paleta Arco-Íris Pastel
         const PILLAR_COLORS = {
-            CAR: 'bg-blue-100 text-blue-700',
-            FIN: 'bg-emerald-100 text-emerald-700',
-            SAU: 'bg-rose-100 text-rose-700',
-            MEN: 'bg-purple-100 text-purple-700',
-            INT: 'bg-amber-100 text-amber-800',
-            REL: 'bg-pink-100 text-pink-700',
-            FAM: 'bg-orange-100 text-orange-700',
-            SOC: 'bg-cyan-100 text-cyan-700',
-            LAZ: 'bg-teal-100 text-teal-700',
-            ESP: 'bg-indigo-100 text-indigo-700'
+            CAR: 'bg-[#FFB3BA]/75 text-rose-950 border border-[#FFB3BA]',
+            FIN: 'bg-[#BAE1FF]/75 text-sky-950 border border-[#BAE1FF]',
+            SAU: 'bg-[#BAFFC9]/80 text-emerald-950 border border-[#BAFFC9]',
+            MEN: 'bg-[#FFFFBA] text-amber-950 border border-amber-200',
+            INT: 'bg-[#FFDFBA]/85 text-orange-950 border border-[#FFDFBA]',
+            REL: 'bg-[#FFB3BA]/50 text-rose-900 border border-[#FFB3BA]',
+            FAM: 'bg-[#FFDFBA]/60 text-orange-900 border border-[#FFDFBA]',
+            SOC: 'bg-[#BAE1FF]/55 text-sky-900 border border-[#BAE1FF]',
+            LAZ: 'bg-[#BAFFC9]/55 text-emerald-900 border border-[#BAFFC9]',
+            ESP: 'bg-[#FFFFBA]/75 text-amber-900 border border-amber-200'
         };
 
         const PRIORITY_STYLES = {
-            ALTA: { label: 'Alta', badge: 'bg-rose-100 text-rose-700 border border-rose-200', dot: '🔴' },
-            MEDIA: { label: 'Média', badge: 'bg-amber-100 text-amber-800 border border-amber-200', dot: '🟡' },
-            BAIXA: { label: 'Baixa', badge: 'bg-emerald-100 text-emerald-700 border border-emerald-200', dot: '🟢' }
+            ALTA: { label: 'Alta', badge: 'bg-[#FFB3BA]/65 text-rose-950 border border-[#FFB3BA]', dot: '🔴' },
+            MEDIA: { label: 'Média', badge: 'bg-[#FFFFBA] text-amber-950 border border-amber-200', dot: '🟡' },
+            BAIXA: { label: 'Baixa', badge: 'bg-[#BAFFC9]/75 text-emerald-950 border border-emerald-200', dot: '🟢' }
         };
+
+        // Ciclo pastel dos 7 dias da semana (Seg a Dom)
+        const WEEKDAY_PASTELS = [
+            { headerBg: '#FFB3BA', bodyBg: 'rgba(255, 179, 186, 0.14)', border: '#F5A3AB' }, // Seg
+            { headerBg: '#FFDFBA', bodyBg: 'rgba(255, 223, 186, 0.18)', border: '#F3CFA4' }, // Ter
+            { headerBg: '#FFFFBA', bodyBg: 'rgba(255, 255, 186, 0.24)', border: '#EAE39B' }, // Qua
+            { headerBg: '#BAFFC9', bodyBg: 'rgba(186, 255, 201, 0.16)', border: '#9CEAB0' }, // Qui
+            { headerBg: '#BAE1FF', bodyBg: 'rgba(186, 225, 255, 0.18)', border: '#9FD0F5' }, // Sex
+            { headerBg: '#FFB3BA', bodyBg: 'rgba(255, 179, 186, 0.12)', border: '#F5A3AB' }, // Sáb
+            { headerBg: '#FFDFBA', bodyBg: 'rgba(255, 223, 186, 0.14)', border: '#F3CFA4' }  // Dom
+        ];
 
         const defaultPilares = [
             { id: 'CAR', nome: 'Carreira & Trabalho', nota: 7, meta: 9, ideal: 'Posicionamento sênior, autonomia e impacto estratégico.' },
@@ -607,8 +666,8 @@
             updateCloudStatus('Sessão expirada ↻', 'text-rose-600');
             const authBtn = document.getElementById('google-auth-btn');
             if (authBtn) {
-                authBtn.classList.remove('bg-emerald-600', 'bg-slate-900');
-                authBtn.classList.add('bg-amber-600');
+                authBtn.classList.remove('bg-[#BAFFC9]', 'border-emerald-300', 'bg-white');
+                authBtn.classList.add('bg-[#FFDFBA]', 'border-amber-300');
             }
             const statusText = document.getElementById('auth-status-text');
             if (statusText) statusText.textContent = "Reconectar Google";
@@ -649,7 +708,7 @@
             const msgEl = document.getElementById('toast-msg');
             if (!toast || !msgEl) return;
             msgEl.textContent = msg;
-            toast.className = `toast fixed bottom-6 right-6 z-50 ${isError ? 'bg-rose-600' : 'bg-emerald-600'} text-white px-5 py-3.5 rounded-2xl shadow-xl flex items-center gap-3 font-semibold text-xs show`;
+            toast.className = `toast fixed bottom-6 right-6 z-50 ${isError ? 'bg-rose-600 text-white' : 'bg-slate-800 text-white'} px-5 py-3.5 rounded-2xl shadow-xl flex items-center gap-3 font-semibold text-xs show`;
             setTimeout(() => toast.classList.remove('show'), 3800);
         }
 
@@ -672,10 +731,12 @@
             if (target) target.classList.remove('hidden');
 
             document.querySelectorAll('.tab-btn').forEach(btn => {
-                btn.className = "tab-btn px-5 py-2.5 rounded-xl text-xs font-bold transition whitespace-nowrap text-slate-600 hover:bg-white/80 flex items-center gap-1.5";
+                btn.classList.remove('tab-active');
+                btn.classList.add('tab-inactive');
             });
             if (btnEl) {
-                btnEl.className = "tab-btn px-5 py-2.5 rounded-xl text-xs font-bold transition whitespace-nowrap bg-[#FF6B00] text-white shadow-md shadow-orange-500/20 flex items-center gap-1.5";
+                btnEl.classList.remove('tab-inactive');
+                btnEl.classList.add('tab-active');
             }
 
             if (tabId === 'bujo') {
@@ -703,8 +764,8 @@
 
                         const authBtn = document.getElementById('google-auth-btn');
                         if (authBtn) {
-                            authBtn.classList.remove('bg-slate-900', 'bg-amber-600');
-                            authBtn.classList.add('bg-emerald-600');
+                            authBtn.classList.remove('bg-white', 'bg-[#FFDFBA]', 'border-amber-300', 'border-slate-300');
+                            authBtn.classList.add('bg-[#BAFFC9]', 'border-emerald-300');
                         }
                         const statusText = document.getElementById('auth-status-text');
                         if (statusText) statusText.textContent = "Conectado ✓";
@@ -741,7 +802,7 @@
         // --- GOOGLE DRIVE SYNC ---
         async function syncWithGoogleDrive(forcePull = false) {
             if (!isTokenValid()) return;
-            updateCloudStatus('Sincronizando...', 'text-indigo-600');
+            updateCloudStatus('Sincronizando...', 'text-sky-600');
 
             try {
                 const searchRes = await fetch(
@@ -772,7 +833,7 @@
                         state = cloudState;
                         saveState(true, cloudTimestamp);
                         renderAll();
-                        updateCloudStatus('Sincronizado ✓', 'text-emerald-600');
+                        updateCloudStatus('Sincronizado ✓', 'text-emerald-700');
                         showToast('☁️ Versão mais recente carregada do Google Drive!');
                     } else if (localTimestamp > cloudTimestamp) {
                         await saveStateToGoogleDrive();
@@ -814,7 +875,7 @@
                 if (res.ok) {
                     const data = await res.json();
                     if (data.id) driveFileId = data.id;
-                    updateCloudStatus('Sincronizado ✓', 'text-emerald-600');
+                    updateCloudStatus('Sincronizado ✓', 'text-emerald-700');
                 } else {
                     updateCloudStatus('Falha ao salvar', 'text-rose-600');
                 }
@@ -884,7 +945,6 @@
                 if (!res.ok) throw new Error('Falha ao buscar tarefas da Inbox');
 
                 const data = await res.json();
-                // Filtra apenas tarefas capturadas fora do LifeOS (IDs que ainda não pertencem ao state.tasks)
                 const managedGoogleIds = new Set(state.tasks.map(t => t.googleTaskId).filter(Boolean));
 
                 inboxItems = (data.items || []).filter(item =>
@@ -944,7 +1004,7 @@
 
             if (!isTokenValid() && inboxItems.length === 0) {
                 container.innerHTML = `
-                    <p class="text-xs text-slate-500 italic bg-white/70 rounded-2xl p-3.5 border border-slate-200/60">
+                    <p class="text-xs text-slate-500 italic bg-white/80 rounded-2xl p-3.5 border border-[#EFE5A8]/70">
                         Conecte sua conta Google e clique em <strong>↻ Buscar Inbox</strong> para carregar novas capturas da lista <strong>Life OS Inbox</strong>.
                     </p>`;
                 return;
@@ -952,7 +1012,7 @@
 
             if (inboxItems.length === 0) {
                 container.innerHTML = `
-                    <div class="text-xs text-emerald-700 font-semibold bg-emerald-50/70 rounded-2xl p-3.5 border border-emerald-200/70 flex items-center justify-between">
+                    <div class="text-xs text-emerald-900 font-semibold bg-[#BAFFC9]/45 rounded-2xl p-3.5 border border-[#BAFFC9] flex items-center justify-between">
                         <span>✨ Tudo triado! Nenhuma captura nova aguardando organização na lista <strong>Life OS Inbox</strong>.</span>
                     </div>`;
                 return;
@@ -964,7 +1024,7 @@
             container.innerHTML = inboxItems.map((item, idx) => {
                 const dueIso = item.due ? item.due.split('T')[0] : '';
                 return `
-                <div class="bg-white/95 rounded-2xl p-3.5 border border-orange-200/70 shadow-sm space-y-2.5">
+                <div class="bg-white rounded-2xl p-3.5 border border-[#EFE5A8] shadow-sm space-y-2.5">
                     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                         <div>
                             <div class="text-xs font-extrabold text-slate-800">${escapeHtml(item.title)}</div>
@@ -975,19 +1035,19 @@
                         </button>
                     </div>
                     <div class="grid grid-cols-1 sm:grid-cols-12 gap-2 items-center">
-                        <select id="inbox-pilar-${idx}" class="sm:col-span-3 bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-1.5 text-[11px] font-semibold text-slate-700 focus:outline-none focus:border-[#FF6B00]">
+                        <select id="inbox-pilar-${idx}" class="sm:col-span-3 bg-[#FDFCF9] border border-[#E5E0D8] rounded-xl px-2.5 py-1.5 text-[11px] font-semibold text-slate-700 focus:outline-none focus:border-sky-400">
                             ${pillarOpts}
                         </select>
-                        <select id="inbox-prio-${idx}" class="sm:col-span-2 bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-1.5 text-[11px] font-semibold text-slate-700 focus:outline-none focus:border-[#FF6B00]">
+                        <select id="inbox-prio-${idx}" class="sm:col-span-2 bg-[#FDFCF9] border border-[#E5E0D8] rounded-xl px-2.5 py-1.5 text-[11px] font-semibold text-slate-700 focus:outline-none focus:border-sky-400">
                             <option value="ALTA">🔴 Alta</option>
                             <option value="MEDIA" selected>🟡 Média</option>
                             <option value="BAIXA">🟢 Baixa</option>
                         </select>
-                        <input type="date" id="inbox-date-${idx}" value="${dueIso}" class="sm:col-span-2 bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-1.5 text-[11px] font-semibold text-slate-700 focus:outline-none focus:border-[#FF6B00]">
-                        <select id="inbox-plan-${idx}" class="sm:col-span-3 bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-1.5 text-[11px] font-semibold text-slate-700 focus:outline-none focus:border-[#FF6B00]">
+                        <input type="date" id="inbox-date-${idx}" value="${dueIso}" class="sm:col-span-2 bg-[#FDFCF9] border border-[#E5E0D8] rounded-xl px-2.5 py-1.5 text-[11px] font-semibold text-slate-700 focus:outline-none focus:border-sky-400">
+                        <select id="inbox-plan-${idx}" class="sm:col-span-3 bg-[#FDFCF9] border border-[#E5E0D8] rounded-xl px-2.5 py-1.5 text-[11px] font-semibold text-slate-700 focus:outline-none focus:border-sky-400">
                             ${planOpts}
                         </select>
-                        <button id="inbox-import-btn-${idx}" onclick="importInboxItem(${idx})" class="sm:col-span-2 bg-emerald-600 hover:bg-emerald-700 disabled:bg-slate-400 text-white px-3 py-1.5 rounded-xl text-[11px] font-bold transition shadow-sm">
+                        <button id="inbox-import-btn-${idx}" onclick="importInboxItem(${idx})" class="sm:col-span-2 bg-[#BAFFC9] hover:bg-[#a1f7b4] disabled:bg-slate-200 text-emerald-950 border border-emerald-300/80 px-3 py-1.5 rounded-xl text-[11px] font-extrabold transition shadow-sm">
                             ✓ Importar
                         </button>
                     </div>
@@ -1025,7 +1085,6 @@
                     recurrenceEndDate: ''
                 };
 
-                // Atualiza a própria tarefa no lugar dentro da lista Life OS Inbox (sem duplicar nem mover)
                 if (isTokenValid() && listId) {
                     await updateTaskDetailsInGoogle(newTask);
                 }
@@ -1080,8 +1139,6 @@
         }
 
         function getTaskGoogleListId(taskObj) {
-            // Tarefas criadas/triadas na nova versão têm googleListId = inboxListId.
-            // Tarefas legadas criadas antes desta atualização permanecem em '@default' até serem concluídas/removidas.
             return taskObj.googleListId || '@default';
         }
 
@@ -1187,7 +1244,6 @@
                 const listId = await ensureInboxListId();
                 if (!listId) return;
 
-                // Busca todas as tarefas da lista unificada Life OS Inbox
                 const resInbox = await fetch(`https://tasks.googleapis.com/tasks/v1/lists/${listId}/tasks?showCompleted=true&showHidden=true&maxResults=100`, {
                     headers: { 'Authorization': `Bearer ${accessToken}` }
                 });
@@ -1195,7 +1251,6 @@
                 const dataInbox = await resInbox.json();
                 const inboxRemoteItems = dataInbox.items || [];
 
-                // Se ainda houver tarefas legadas ligadas à lista @default, busca também para manter compatibilidade
                 let defaultRemoteItems = [];
                 const hasLegacyTasks = state.tasks.some(t => t.googleTaskId && (!t.googleListId || t.googleListId === '@default'));
                 if (hasLegacyTasks) {
@@ -1262,25 +1317,25 @@
             const container = document.getElementById('sliders-container');
             if (!container) return;
             container.innerHTML = state.pilares.map((p, idx) => `
-                <div class="bg-white/90 p-3.5 rounded-2xl border border-slate-200/80 space-y-2">
+                <div class="bg-[#FDFCF9] p-3.5 rounded-2xl border border-[#EAE6DF] space-y-2">
                     <div class="flex justify-between items-center text-xs font-bold">
                         <span class="text-slate-800 flex items-center gap-2">
-                            <span class="px-2 py-0.5 rounded-md text-[10px] ${PILLAR_COLORS[p.id] || 'bg-slate-100'}">${p.id}</span>
+                            <span class="px-2 py-0.5 rounded-md text-[10px] font-extrabold ${PILLAR_COLORS[p.id] || 'bg-slate-100'}">${p.id}</span>
                             ${p.nome}
                         </span>
                     </div>
-                    <div class="grid grid-cols-2 gap-3 bg-slate-50 p-2 rounded-xl border border-slate-200/60 text-[11px]">
+                    <div class="grid grid-cols-2 gap-3 bg-white p-2.5 rounded-xl border border-[#EAE6DF] text-[11px]">
                         <div>
-                            <span class="text-slate-500 font-semibold block mb-0.5">Nota Atual: <strong class="text-[#FF6B00]" id="val-${idx}">${p.nota}</strong>/10</span>
+                            <span class="text-slate-500 font-semibold block mb-1">Nota Atual: <strong class="text-rose-600" id="val-${idx}">${p.nota}</strong>/10</span>
                             <input type="range" min="0" max="10" value="${p.nota}"
                                 oninput="updatePilarNota(${idx}, this.value)"
-                                class="w-full accent-[#FF6B00] cursor-pointer h-1.5 bg-slate-200 rounded-lg">
+                                class="w-full accent-rose-400 cursor-pointer h-1.5 bg-[#FFB3BA]/40 rounded-lg">
                         </div>
                         <div>
-                            <span class="text-slate-500 font-semibold block mb-0.5">Meta Semestral: <strong class="text-indigo-600" id="meta-val-${idx}">${p.meta}</strong>/10</span>
+                            <span class="text-slate-500 font-semibold block mb-1">Meta Semestral: <strong class="text-sky-600" id="meta-val-${idx}">${p.meta}</strong>/10</span>
                             <input type="range" min="0" max="10" value="${p.meta}"
                                 oninput="updatePilarMeta(${idx}, this.value)"
-                                class="w-full accent-indigo-600 cursor-pointer h-1.5 bg-slate-200 rounded-lg">
+                                class="w-full accent-sky-400 cursor-pointer h-1.5 bg-[#BAE1FF]/50 rounded-lg">
                         </div>
                     </div>
                     <p class="text-[10px] text-slate-500 italic"><strong>Ideal:</strong> ${p.ideal}</p>
@@ -1320,19 +1375,19 @@
                             {
                                 label: 'Nota Atual',
                                 data: state.pilares.map(p => p.nota),
-                                backgroundColor: 'rgba(255, 107, 0, 0.22)',
-                                borderColor: '#FF6B00',
+                                backgroundColor: 'rgba(255, 179, 186, 0.45)',
+                                borderColor: '#F47280',
                                 borderWidth: 2.5,
-                                pointBackgroundColor: '#FF6B00'
+                                pointBackgroundColor: '#F47280'
                             },
                             {
                                 label: 'Meta Semestral',
                                 data: state.pilares.map(p => p.meta),
-                                backgroundColor: 'rgba(99, 102, 241, 0.08)',
-                                borderColor: '#6366F1',
-                                borderWidth: 1.5,
+                                backgroundColor: 'rgba(186, 225, 255, 0.30)',
+                                borderColor: '#60A5FA',
+                                borderWidth: 2,
                                 borderDash: [5, 5],
-                                pointBackgroundColor: '#6366F1'
+                                pointBackgroundColor: '#60A5FA'
                             }
                         ]
                     },
@@ -1373,7 +1428,7 @@
             const container = document.getElementById('planos-grid');
             if (!container) return;
             if (state.planos.length === 0) {
-                container.innerHTML = `<div class="col-span-2 glass-card p-8 rounded-3xl text-center text-xs text-slate-500">Nenhum plano de ação criado ainda. Use o formulário acima para começar.</div>`;
+                container.innerHTML = `<div class="col-span-2 paper-card p-8 rounded-3xl text-center text-xs text-slate-500">Nenhum plano de ação criado ainda. Use o formulário acima para começar.</div>`;
                 return;
             }
 
@@ -1381,20 +1436,20 @@
                 const stats = calculatePlanProgress(pl.id);
                 const overdue = pl.deadline && stats.percent < 100 && isDateOverdue(pl.deadline);
                 return `
-                <div class="glass-card p-5 rounded-3xl flex flex-col justify-between">
+                <div class="paper-card p-5 rounded-3xl flex flex-col justify-between">
                     <div>
                         <div class="flex justify-between items-start gap-2 flex-wrap">
                             <div class="flex items-center gap-2 flex-wrap">
-                                <span class="text-[11px] px-2.5 py-0.5 rounded-full font-extrabold ${PILLAR_COLORS[pl.pilar] || 'bg-orange-100 text-orange-700'}">[${pl.pilar}]</span>
+                                <span class="text-[11px] px-2.5 py-0.5 rounded-full font-extrabold ${PILLAR_COLORS[pl.pilar] || 'bg-slate-100 text-slate-800'}">[${pl.pilar}]</span>
                                 ${pl.deadline ? `
-                                    <span class="text-[11px] px-2.5 py-0.5 rounded-full font-bold ${overdue ? 'bg-rose-100 text-rose-700' : 'bg-slate-100 text-slate-600'}">
+                                    <span class="text-[11px] px-2.5 py-0.5 rounded-full font-bold ${overdue ? 'bg-[#FFB3BA]/70 text-rose-950 border border-[#FFB3BA]' : 'bg-[#F4F1EA] text-slate-600'}">
                                         📅 Prazo: ${formatDateBR(pl.deadline)}${overdue ? ' (Vencido)' : ''}
                                     </span>
                                 ` : ''}
                             </div>
                             <div class="flex items-center gap-1">
-                                <button onclick="editPlan(${pl.id})" title="Editar Plano" class="text-slate-400 hover:text-indigo-600 text-xs font-bold px-2 py-0.5 rounded-lg hover:bg-indigo-50 transition">✏️ Editar</button>
-                                <button onclick="deletePlan(${pl.id})" title="Excluir Plano" class="text-slate-400 hover:text-rose-600 text-xs font-bold px-2 py-0.5 rounded-lg hover:bg-rose-50 transition">✕ Excluir</button>
+                                <button onclick="editPlan(${pl.id})" title="Editar Plano" class="text-slate-400 hover:text-slate-800 text-xs font-bold px-2 py-0.5 rounded-lg hover:bg-[#BAE1FF]/40 transition">✏️ Editar</button>
+                                <button onclick="deletePlan(${pl.id})" title="Excluir Plano" class="text-slate-400 hover:text-rose-600 text-xs font-bold px-2 py-0.5 rounded-lg hover:bg-[#FFB3BA]/40 transition">✕ Excluir</button>
                             </div>
                         </div>
                         <h3 class="text-sm font-extrabold text-slate-800 mt-2.5">${escapeHtml(pl.titulo)}</h3>
@@ -1405,10 +1460,10 @@
                     <div class="mt-5">
                         <div class="flex justify-between text-xs font-bold text-slate-700 mb-1.5">
                             <span>Progresso Automático</span>
-                            <span class="text-[#FF6B00]">${stats.percent}%</span>
+                            <span class="text-slate-900 font-extrabold">${stats.percent}%</span>
                         </div>
-                        <div class="w-full bg-slate-200/80 h-2.5 rounded-full overflow-hidden">
-                            <div class="bg-gradient-to-r from-[#FF6B00] to-amber-500 h-full transition-all duration-500" style="width: ${stats.percent}%"></div>
+                        <div class="w-full bg-[#F1EDE4] h-3 rounded-full overflow-hidden border border-[#EAE6DF]">
+                            <div class="progress-rainbow h-full transition-all duration-500 rounded-full" style="width: ${stats.percent}%"></div>
                         </div>
                     </div>
                 </div>
@@ -1483,7 +1538,7 @@
 
         function setTaskViewMode(mode) {
             taskViewMode = mode;
-            const activeClass = "px-3 py-1.5 rounded-lg text-xs font-bold transition bg-white text-slate-800 shadow-sm";
+            const activeClass = "px-3 py-1.5 rounded-lg text-xs font-bold transition bg-white text-slate-900 shadow-sm";
             const inactiveClass = "px-3 py-1.5 rounded-lg text-xs font-bold transition text-slate-600 hover:text-slate-900";
 
             const btnCards = document.getElementById('view-btn-cards');
@@ -1695,28 +1750,28 @@
             const overdue = t.dueDate && !t.concluida && isDateOverdue(t.dueDate);
 
             return `
-            <div class="glass-card p-4 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 ${t.concluida ? 'opacity-75 bg-white/60' : ''}">
+            <div class="paper-card p-4 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 ${t.concluida ? 'opacity-75 bg-white/60' : ''}">
                 <div class="flex items-start sm:items-center gap-2.5 flex-wrap">
-                    <span class="text-[#FF6B00] font-extrabold text-sm">${t.concluida ? '×' : '•'}</span>
+                    <span class="text-slate-700 font-extrabold text-sm">${t.concluida ? '×' : '•'}</span>
                     <span class="text-[11px] px-2.5 py-0.5 rounded-lg font-extrabold ${PILLAR_COLORS[t.pilar] || 'bg-slate-100 text-slate-700'}">[${t.pilar}]</span>
                     <span class="text-[10px] px-2 py-0.5 rounded-full font-bold ${prio.badge}">${prio.dot} ${prio.label}</span>
-                    ${t.isRecurring ? `<span class="text-[10px] bg-orange-100 text-[#FF6B00] px-2 py-0.5 rounded-full font-bold">🔄 Recorrente (${t.frequency})</span>` : ''}
+                    ${t.isRecurring ? `<span class="text-[10px] bg-[#FFDFBA]/80 text-orange-950 border border-[#FFDFBA] px-2 py-0.5 rounded-full font-bold">🔄 Recorrente (${t.frequency})</span>` : ''}
                     <span class="text-xs font-semibold ${t.concluida ? 'line-through text-slate-400' : 'text-slate-800'}">${escapeHtml(t.texto)}</span>
                     ${t.dueDate ? `
-                        <span class="text-[10px] px-2.5 py-0.5 rounded-full font-bold ${overdue ? 'bg-rose-100 text-rose-700' : 'bg-sky-100 text-sky-700'}">
+                        <span class="text-[10px] px-2.5 py-0.5 rounded-full font-bold ${overdue ? 'bg-[#FFB3BA]/80 text-rose-950 border border-[#FFB3BA]' : 'bg-[#BAE1FF]/65 text-sky-950 border border-[#BAE1FF]'}">
                             📅 ${formatDateBR(t.dueDate)}${overdue ? ' (Vencido)' : ''}
                         </span>
                     ` : ''}
-                    ${linkedPlan ? `<span class="text-[10px] bg-purple-100 text-purple-700 px-2.5 py-0.5 rounded-full font-bold">🎯 ${escapeHtml(linkedPlan.titulo)}</span>` : ''}
+                    ${linkedPlan ? `<span class="text-[10px] bg-[#F4F1EA] text-slate-700 border border-[#EAE6DF] px-2.5 py-0.5 rounded-full font-bold">🎯 ${escapeHtml(linkedPlan.titulo)}</span>` : ''}
                 </div>
                 <div class="flex items-center gap-2 self-end sm:self-auto">
-                    <button onclick="toggleTask(${t.id})" class="text-xs px-3.5 py-1.5 rounded-xl font-bold transition ${t.concluida ? 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200' : 'bg-slate-100 hover:bg-slate-200 text-slate-700'}">
+                    <button onclick="toggleTask(${t.id})" class="text-xs px-3.5 py-1.5 rounded-xl font-bold transition ${t.concluida ? 'bg-[#BAFFC9] text-emerald-950 hover:bg-[#a1f7b4]' : 'bg-[#F4F1EA] hover:bg-[#BAFFC9]/60 text-slate-800'}">
                         ${t.concluida ? 'Reabrir ↺' : 'Concluir ✓'}
                     </button>
-                    <button onclick="openEditTaskModal(${t.id})" title="Editar Tarefa" class="text-xs px-2.5 py-1.5 rounded-xl font-bold text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 transition">
+                    <button onclick="openEditTaskModal(${t.id})" title="Editar Tarefa" class="text-xs px-2.5 py-1.5 rounded-xl font-bold text-slate-400 hover:text-slate-800 hover:bg-[#BAE1FF]/40 transition">
                         ✏️
                     </button>
-                    <button onclick="deleteTask(${t.id})" title="Excluir Tarefa" class="text-xs px-2.5 py-1.5 rounded-xl font-bold text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition">
+                    <button onclick="deleteTask(${t.id})" title="Excluir Tarefa" class="text-xs px-2.5 py-1.5 rounded-xl font-bold text-slate-400 hover:text-rose-700 hover:bg-[#FFB3BA]/45 transition">
                         ✕
                     </button>
                 </div>
@@ -1734,7 +1789,7 @@
                 const overdue = t.dueDate && isDateOverdue(t.dueDate);
 
                 return `
-                <tr class="bg-white hover:bg-slate-50/80 transition">
+                <tr class="bg-white hover:bg-[#FDFCF9] transition">
                     <td class="text-center px-2 py-1">
                         <input type="checkbox" onchange="toggleTask(${t.id})" class="w-4 h-4 accent-emerald-600 cursor-pointer rounded" title="Marcar como concluída">
                     </td>
@@ -1762,16 +1817,16 @@
                         </select>
                     </td>
                     <td class="text-center px-2 py-1 w-12">
-                        <button onclick="deleteTask(${t.id})" title="Excluir linha" class="text-slate-400 hover:text-rose-600 font-bold text-xs px-1.5 py-0.5 rounded hover:bg-rose-50">✕</button>
+                        <button onclick="deleteTask(${t.id})" title="Excluir linha" class="text-slate-400 hover:text-rose-600 font-bold text-xs px-1.5 py-0.5 rounded hover:bg-[#FFB3BA]/40">✕</button>
                     </td>
                 </tr>`;
             }).join('');
 
             return `
-            <div class="glass-card rounded-2xl overflow-x-auto shadow-sm">
+            <div class="paper-card rounded-2xl overflow-x-auto shadow-sm">
                 <table class="w-full text-left border-collapse excel-table text-xs">
                     <thead>
-                        <tr class="bg-slate-100/90 text-slate-700 font-extrabold text-[11px] uppercase tracking-wider">
+                        <tr class="bg-[#F6F3EC] text-slate-700 font-extrabold text-[11px] uppercase tracking-wider">
                             <th class="py-2.5 px-2 text-center w-10">✓</th>
                             <th class="py-2.5 px-3">Tarefa / Descrição (Edição Direta)</th>
                             <th class="py-2.5 px-2">Pilar</th>
@@ -1782,10 +1837,10 @@
                         </tr>
                     </thead>
                     <tbody>
-                        <tr class="bg-orange-50/60">
-                            <td class="text-center px-2 py-1 font-extrabold text-[#FF6B00] text-sm">+</td>
+                        <tr class="bg-[#FFFFBA]/55">
+                            <td class="text-center px-2 py-1 font-extrabold text-slate-800 text-sm">+</td>
                             <td class="p-0">
-                                <input type="text" id="quick-row-texto" onkeydown="if(event.key==='Enter') addQuickRowTask()" placeholder="Digite nova tarefa e aperte Enter..." class="excel-input font-semibold text-slate-900 placeholder-slate-400">
+                                <input type="text" id="quick-row-texto" onkeydown="if(event.key==='Enter') addQuickRowTask()" placeholder="Digite nova tarefa e aperte Enter..." class="excel-input font-semibold text-slate-900 placeholder-slate-500">
                             </td>
                             <td class="p-0">
                                 <select id="quick-row-pilar" class="excel-input font-bold text-slate-700">
@@ -1808,7 +1863,7 @@
                                 </select>
                             </td>
                             <td class="text-center px-1.5 py-1">
-                                <button onclick="addQuickRowTask()" title="Adicionar linha" class="bg-[#FF6B00] hover:bg-orange-600 text-white font-bold text-[11px] px-2.5 py-1 rounded-lg shadow-sm transition">Salvar</button>
+                                <button onclick="addQuickRowTask()" title="Adicionar linha" class="bg-slate-800 hover:bg-slate-900 text-white font-bold text-[11px] px-2.5 py-1 rounded-lg shadow-sm transition">Salvar</button>
                             </td>
                         </tr>
                         ${rowsHTML || `<tr><td colspan="7" class="text-center py-6 text-slate-400 italic">Nenhuma tarefa pendente. Use a linha acima para cadastrar rapidamente!</td></tr>`}
@@ -1817,7 +1872,7 @@
             </div>`;
         }
 
-        // --- RENDERIZAÇÃO DO CALENDÁRIO SEMANAL (SEG A DOM) ---
+        // --- RENDERIZAÇÃO DO CALENDÁRIO SEMANAL PASTEL (SEG A DOM) ---
         function renderWeeklyCalendarHTML(pendingTasks) {
             const todayIso = getLocalISODate();
             const now = new Date();
@@ -1825,14 +1880,16 @@
             const diffToMonday = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
 
             const monday = new Date(now.getFullYear(), now.getMonth(), now.getDate() + diffToMonday + (currentWeekOffset * 7));
-            const dayNames = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom'];
+            const dayNames = ['SEG', 'TER', 'QUA', 'QUI', 'SEX', 'SÁB', 'DOM'];
 
             const weekDays = Array.from({ length: 7 }, (_, i) => {
                 const d = new Date(monday.getFullYear(), monday.getMonth(), monday.getDate() + i);
                 return {
                     label: dayNames[i],
                     iso: getLocalISODate(d),
-                    shortDate: `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}`
+                    dayNum: String(d.getDate()).padStart(2, '0'),
+                    shortDate: `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}`,
+                    theme: WEEKDAY_PASTELS[i]
                 };
             });
 
@@ -1849,55 +1906,54 @@
                 const itemsHTML = dayTasks.map(t => {
                     const prio = PRIORITY_STYLES[t.priority] || PRIORITY_STYLES.MEDIA;
                     return `
-                    <div class="bg-white rounded-xl p-2.5 border border-slate-200/90 shadow-sm hover:border-orange-300 transition space-y-1.5">
+                    <div class="bg-white rounded-xl p-2.5 border border-[#EAE6DF] shadow-sm hover:border-slate-400 transition space-y-1.5">
                         <div class="flex items-center justify-between gap-1">
                             <span class="text-[9px] px-1.5 py-0.5 rounded font-extrabold ${PILLAR_COLORS[t.pilar] || 'bg-slate-100'}">[${t.pilar}]</span>
                             <div class="flex items-center gap-1">
                                 <span class="text-[10px]" title="Prioridade ${prio.label}">${prio.dot}</span>
-                                <button onclick="toggleTask(${t.id})" title="Concluir" class="text-[10px] bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-bold px-1.5 py-0.5 rounded-md">✓</button>
+                                <button onclick="toggleTask(${t.id})" title="Concluir" class="text-[10px] bg-[#BAFFC9]/70 hover:bg-[#BAFFC9] text-emerald-950 font-extrabold px-1.5 py-0.5 rounded-md">✓</button>
                             </div>
                         </div>
-                        <button onclick="openEditTaskModal(${t.id})" class="block w-full text-left text-[11px] font-bold text-slate-800 hover:text-[#FF6B00] leading-snug">
+                        <button onclick="openEditTaskModal(${t.id})" class="block w-full text-left text-[11px] font-bold text-slate-800 hover:text-slate-950 leading-snug">
                             ${t.isRecurring ? '🔄 ' : ''}${escapeHtml(t.texto)}
                         </button>
                     </div>`;
                 }).join('');
 
                 return `
-                <div class="rounded-2xl p-3 flex flex-col min-h-[210px] border transition ${isToday ? 'bg-orange-50/70 border-[#FF6B00] shadow-md shadow-orange-500/10' : 'bg-white/75 border-slate-200/80'}">
-                    <div class="flex items-center justify-between pb-2 mb-2 border-b ${isToday ? 'border-orange-200' : 'border-slate-100'}">
-                        <div>
-                            <span class="text-[11px] font-extrabold uppercase ${isToday ? 'text-[#FF6B00]' : 'text-slate-500'}">${day.label}</span>
-                            <span class="text-xs font-extrabold ml-1 ${isToday ? 'text-slate-900' : 'text-slate-700'}">${day.shortDate}</span>
-                            ${isToday ? '<span class="ml-1 text-[9px] bg-[#FF6B00] text-white px-1.5 py-0.5 rounded-full font-bold">HOJE</span>' : ''}
+                <div class="rounded-2xl overflow-hidden flex flex-col min-h-[230px] border transition ${isToday ? 'ring-2 ring-slate-800 shadow-md' : 'shadow-sm'}" style="background-color: ${day.theme.bodyBg}; border-color: ${day.theme.border};">
+                    <div class="px-3 py-2.5 flex items-center justify-between border-b" style="background-color: ${day.theme.headerBg}; border-color: ${day.theme.border};">
+                        <div class="flex items-center gap-1.5">
+                            <span class="text-xs font-extrabold text-slate-900">${day.label} ${day.dayNum}</span>
+                            ${isToday ? '<span class="text-[9px] bg-slate-900 text-white px-1.5 py-0.5 rounded-full font-bold">HOJE</span>' : ''}
                         </div>
-                        <button onclick="openNewTaskModal('${day.iso}')" title="Adicionar tarefa em ${day.shortDate}" class="w-6 h-6 rounded-lg bg-slate-100 hover:bg-[#FF6B00] hover:text-white text-slate-600 font-extrabold text-xs flex items-center justify-center transition">+</button>
+                        <button onclick="openNewTaskModal('${day.iso}')" title="Adicionar tarefa em ${day.shortDate}" class="w-6 h-6 rounded-lg bg-white/75 hover:bg-slate-900 hover:text-white text-slate-800 font-extrabold text-xs flex items-center justify-center transition">+</button>
                     </div>
-                    <div class="space-y-2 flex-1">
-                        ${itemsHTML || '<p class="text-[10px] text-slate-400 italic text-center pt-6">Livre</p>'}
+                    <div class="p-2.5 space-y-2 flex-1">
+                        ${itemsHTML || '<p class="text-[10px] text-slate-400 italic text-center pt-8">Livre</p>'}
                     </div>
                 </div>`;
             }).join('');
 
             const extraChip = (t, isLate) => `
-                <div class="inline-flex items-center gap-1.5 bg-white border ${isLate ? 'border-rose-200' : 'border-slate-200'} rounded-xl px-2.5 py-1.5 text-[11px] shadow-sm">
+                <div class="inline-flex items-center gap-1.5 bg-white border ${isLate ? 'border-[#FFB3BA]' : 'border-[#EAE6DF]'} rounded-xl px-2.5 py-1.5 text-[11px] shadow-sm">
                     <span class="px-1.5 py-0.5 rounded text-[9px] font-extrabold ${PILLAR_COLORS[t.pilar] || 'bg-slate-100'}">[${t.pilar}]</span>
-                    <button onclick="openEditTaskModal(${t.id})" class="font-bold text-slate-700 hover:text-[#FF6B00]">${escapeHtml(t.texto)}</button>
-                    ${t.dueDate ? `<span class="text-[10px] font-bold text-rose-600">(${formatDateBR(t.dueDate)})</span>` : ''}
-                    <button onclick="toggleTask(${t.id})" title="Concluir" class="text-emerald-600 hover:bg-emerald-50 font-extrabold px-1 rounded">✓</button>
+                    <button onclick="openEditTaskModal(${t.id})" class="font-bold text-slate-800 hover:underline">${escapeHtml(t.texto)}</button>
+                    ${t.dueDate ? `<span class="text-[10px] font-bold text-rose-700">(${formatDateBR(t.dueDate)})</span>` : ''}
+                    <button onclick="toggleTask(${t.id})" title="Concluir" class="text-emerald-700 hover:bg-[#BAFFC9]/60 font-extrabold px-1 rounded">✓</button>
                 </div>`;
 
             return `
-            <div class="glass-card p-5 rounded-3xl space-y-4">
+            <div class="paper-card p-5 rounded-3xl space-y-4">
                 <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                     <div>
                         <h3 class="text-sm font-extrabold text-slate-800">📅 Semana: ${formatDateBR(weekStartIso)} a ${formatDateBR(weekEndIso)}</h3>
                         <p class="text-[11px] text-slate-500">Clique em uma tarefa para editar ou no botão <strong>+</strong> do dia para agendar.</p>
                     </div>
                     <div class="flex items-center gap-1.5 self-start sm:self-auto">
-                        <button onclick="changeWeek(-1)" class="bg-white hover:bg-slate-100 border border-slate-200 text-slate-700 px-3 py-1.5 rounded-xl text-xs font-bold transition">◀ Anterior</button>
-                        <button onclick="changeWeek(0)" class="bg-orange-100 hover:bg-orange-200 text-[#FF6B00] px-3 py-1.5 rounded-xl text-xs font-bold transition">Hoje</button>
-                        <button onclick="changeWeek(1)" class="bg-white hover:bg-slate-100 border border-slate-200 text-slate-700 px-3 py-1.5 rounded-xl text-xs font-bold transition">Próxima ▶</button>
+                        <button onclick="changeWeek(-1)" class="bg-white hover:bg-[#F4F1EA] border border-[#EAE6DF] text-slate-700 px-3 py-1.5 rounded-xl text-xs font-bold transition">◀ Anterior</button>
+                        <button onclick="changeWeek(0)" class="bg-[#BAE1FF] hover:bg-[#a3d5ff] text-slate-900 border border-sky-300/70 px-3 py-1.5 rounded-xl text-xs font-extrabold transition">Hoje</button>
+                        <button onclick="changeWeek(1)" class="bg-white hover:bg-[#F4F1EA] border border-[#EAE6DF] text-slate-700 px-3 py-1.5 rounded-xl text-xs font-bold transition">Próxima ▶</button>
                     </div>
                 </div>
 
@@ -1906,14 +1962,14 @@
                 </div>
 
                 ${overdueOutside.length > 0 ? `
-                <div class="bg-rose-50/70 border border-rose-200/80 rounded-2xl p-3.5">
-                    <div class="text-[11px] font-extrabold text-rose-700 mb-2">⚠️ Atrasadas de semanas anteriores (${overdueOutside.length})</div>
+                <div class="bg-[#FFB3BA]/25 border border-[#FFB3BA] rounded-2xl p-3.5">
+                    <div class="text-[11px] font-extrabold text-rose-950 mb-2">⚠️ Atrasadas de semanas anteriores (${overdueOutside.length})</div>
                     <div class="flex flex-wrap gap-2">${overdueOutside.map(t => extraChip(t, true)).join('')}</div>
                 </div>` : ''}
 
                 ${undatedTasks.length > 0 ? `
-                <div class="bg-slate-50/80 border border-slate-200/80 rounded-2xl p-3.5">
-                    <div class="text-[11px] font-extrabold text-slate-600 mb-2">📌 Sem data definida (${undatedTasks.length}) — clique para agendar</div>
+                <div class="bg-[#F6F3EC] border border-[#EAE6DF] rounded-2xl p-3.5">
+                    <div class="text-[11px] font-extrabold text-slate-700 mb-2">📌 Sem data definida (${undatedTasks.length}) — clique para agendar</div>
                     <div class="flex flex-wrap gap-2">${undatedTasks.map(t => extraChip(t, false)).join('')}</div>
                 </div>` : ''}
             </div>`;
@@ -1936,7 +1992,7 @@
                 activeContainer.innerHTML = renderWeeklyCalendarHTML(pendingTasks);
             } else {
                 if (pendingTasks.length === 0) {
-                    activeContainer.innerHTML = `<div class="glass-card p-8 rounded-3xl text-center text-xs text-slate-500">Nenhuma tarefa pendente no momento! 🎉</div>`;
+                    activeContainer.innerHTML = `<div class="paper-card p-8 rounded-3xl text-center text-xs text-slate-500">Nenhuma tarefa pendente no momento! 🎉</div>`;
                 } else {
                     activeContainer.innerHTML = pendingTasks.map(t => renderTaskCardHTML(t)).join('');
                 }
@@ -2203,19 +2259,19 @@
             container.innerHTML = `
                 <table class="w-full text-left text-xs border-collapse">
                     <thead>
-                        <tr class="border-b border-slate-200">
+                        <tr class="border-b border-[#EAE6DF]">
                             <th class="py-2.5 pr-4 font-extrabold text-slate-700">Hábito</th>
                             <th class="py-2.5 px-2 font-extrabold text-slate-700">Pilar</th>
                             ${daysHeader}
                             <th class="py-2.5 pl-3 text-right font-extrabold text-slate-700">Ação</th>
                         </tr>
                     </thead>
-                    <tbody class="divide-y divide-slate-100">
+                    <tbody class="divide-y divide-[#F1EDE4]">
                         ${state.habitos.map(h => {
                             const cells = (h.dias || []).map((done, dIdx) => `
                                 <td class="py-2.5 px-1 text-center">
                                     <button onclick="toggleHabitDay(${h.id}, ${dIdx})"
-                                        class="w-6 h-6 rounded-lg font-bold text-[11px] transition ${done ? 'bg-emerald-500 text-white shadow-sm' : 'bg-slate-100 hover:bg-slate-200 text-slate-400'}">
+                                        class="w-6 h-6 rounded-lg font-extrabold text-[11px] transition ${done ? 'bg-[#BAFFC9] text-emerald-950 border border-emerald-300 shadow-sm' : 'bg-[#F4F1EA] hover:bg-[#BAE1FF]/45 text-slate-400'}">
                                         ${done ? '✓' : '·'}
                                     </button>
                                 </td>
@@ -2227,7 +2283,7 @@
                                     <td class="py-3 px-2"><span class="px-2 py-0.5 rounded-md text-[10px] font-extrabold ${PILLAR_COLORS[h.pilar] || 'bg-slate-100'}">[${h.pilar}]</span></td>
                                     ${cells}
                                     <td class="py-3 pl-3 text-right">
-                                        <button onclick="deleteHabit(${h.id})" class="text-slate-400 hover:text-rose-600 font-bold text-xs px-2 py-1 rounded-lg hover:bg-rose-50 transition">✕</button>
+                                        <button onclick="deleteHabit(${h.id})" class="text-slate-400 hover:text-rose-600 font-bold text-xs px-2 py-1 rounded-lg hover:bg-[#FFB3BA]/40 transition">✕</button>
                                     </td>
                                 </tr>
                             `;
